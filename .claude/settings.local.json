@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(powershell -File \"C:\\\\laragon\\\\www\\\\polizas\\\\test_tsa.ps1\" 2>&1)",
+      "PowerShell(Get-Content *)",
+      "PowerShell(Start-Sleep -Seconds 12; powershell -File \"C:\\\\laragon\\\\www\\\\polizas\\\\test_tsa.ps1\")",
+      "PowerShell(& \"C:\\\\laragon\\\\bin\\\\python\\\\python-3.13\\\\python.exe\" \"C:\\\\laragon\\\\www\\\\polizas\\\\sign_pyhanko.py\" --input \"C:\\\\laragon\\\\www\\\\polizas\\\\storage\\\\app\\\\private\\\\oficios\\\\Oficio_Renovacion_4.pdf\" --output \"C:\\\\laragon\\\\www\\\\polizas\\\\storage\\\\app\\\\Oficio_TEST_FINAL.pdf\" --p12 \"C:\\\\Users\\\\GESTOR TICS 2\\\\OneDrive\\\\Documents\\\\ANTHONY SEBASTIAN PENA GUACHIMBOZA 0550614788-070126115624.p12\" --password \"Anthony1998\" --name \"ANTHONY PENA\" --app-version \"1.0.0\" --app-name \"SisPolizas-GADPC\" --tsa-url \"https://freetsa.org/tsr\")",
+      "PowerShell(& \"C:\\\\laragon\\\\bin\\\\python\\\\python-3.13\\\\python.exe\" \"C:\\\\laragon\\\\www\\\\polizas\\\\sign_pyhanko.py\" --input \"C:\\\\laragon\\\\www\\\\polizas\\\\storage\\\\app\\\\private\\\\oficios\\\\Oficio_Renovacion_4.pdf\" --output \"C:\\\\laragon\\\\www\\\\polizas\\\\storage\\\\app\\\\Oficio_TEST_SELLO.pdf\" --p12 \"C:\\\\Users\\\\GESTOR TICS 2\\\\OneDrive\\\\Documents\\\\ANTHONY SEBASTIAN PENA GUACHIMBOZA 0550614788-070126115624.p12\" --password \"Anthony1998\" --name \"ANTHONY PENA\" --app-version \"1.0.0\" --app-name \"SisPolizas-GADPC\" --tsa-url \"https://freetsa.org/tsr\")",
+      "PowerShell(& \"C:\\\\laragon\\\\bin\\\\python\\\\python-3.13\\\\python.exe\" \"C:\\\\laragon\\\\www\\\\polizas\\\\sign_pyhanko.py\" --input \"C:\\\\laragon\\\\www\\\\polizas\\\\storage\\\\app\\\\private\\\\oficios\\\\Oficio_Renovacion_4.pdf\" --output \"C:\\\\laragon\\\\www\\\\polizas\\\\storage\\\\app\\\\Oficio_TEST_SELLO2.pdf\" --p12 \"C:\\\\Users\\\\GESTOR TICS 2\\\\OneDrive\\\\Documents\\\\ANTHONY SEBASTIAN PENA GUACHIMBOZA 0550614788-070126115624.p12\" --password \"Anthony1998\" --name \"ANTHONY PENA\" --app-version \"1.0.0\" --app-name \"SisPolizas-GADPC\" --tsa-url \"https://freetsa.org/tsr\")",
+      "PowerShell(& \"C:\\\\laragon\\\\bin\\\\python\\\\python-3.13\\\\python.exe\" \"C:\\\\laragon\\\\www\\\\polizas\\\\sign_pyhanko.py\" --input \"C:\\\\laragon\\\\www\\\\polizas\\\\storage\\\\app\\\\private\\\\oficios\\\\Oficio_Renovacion_4.pdf\" --output \"C:\\\\laragon\\\\www\\\\polizas\\\\storage\\\\app\\\\Oficio_TEST_SELLO3.pdf\" --p12 \"C:\\\\Users\\\\GESTOR TICS 2\\\\OneDrive\\\\Documents\\\\ANTHONY SEBASTIAN PENA GUACHIMBOZA 0550614788-070126115624.p12\" --password \"Anthony1998\" --name \"ANTHONY PENA\" --app-version \"1.0.0\" --app-name \"SisPolizas-GADPC\" --tsa-url \"https://freetsa.org/tsr\")",
+      "PowerShell(New-Item *)",
+      "Bash(findstr /i \"locale\")"
+    ]
+  }
+}

@@ -1,0 +1,112 @@
+<?php
+
+namespace Database\Seeders;
+
+use Illuminate\Database\Seeder;
+use App\Models\Contratista;
+
+class ContratistasSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $contratistas = [
+            ['nombre_cont' => 'Tapia Calvopiña José Rodrigo'],
+            ['nombre_cont' => 'Traudet S.A'],
+            ['nombre_cont' => 'Molina Espin Mario Fernando'],
+            ['nombre_cont' => 'Constructores Aucanshala & Ilaquiche'],
+            ['nombre_cont' => 'Chisaguano Chisaguano Erika'],
+            ['nombre_cont' => 'Castillo Arias Jorge'],
+            ['nombre_cont' => 'López Paredes Marco Alexis'],
+            ['nombre_cont' => 'Tapia Vivas Jimena Margarita'],
+            ['nombre_cont' => 'Aucanshala Allaica Miguel Angel'],
+            ['nombre_cont' => 'Consorcio Vial El Corazón-Gonzalo Lara'],
+            ['nombre_cont' => 'Culqui Taco Luis Fernando'],
+            ['nombre_cont' => 'Consorcio Salcedo -Jaime Almache'],
+            ['nombre_cont' => 'Consorcio Vial El Carmen - Gonzálo Lara'],
+            ['nombre_cont' => 'Consorcio Vial Montalvo - Quinchuela Edison'],
+            ['nombre_cont' => 'Constructora Pujili - Segovia Tipantasig Luis'],
+            ['nombre_cont' => 'Romero Naranjo Francisco Ruben'],
+            ['nombre_cont' => 'Consorcio Juan Montalvo-Espín Edison'],
+            ['nombre_cont' => 'Tapia Chaguamate Wilfrido Orlando'],
+            ['nombre_cont' => 'Consorcio Salcedo - BEDE'],
+            ['nombre_cont' => 'Consorcio Pasubullo Ing. Chaluisa'],
+            ['nombre_cont' => 'Torres Tamayo Jonathan Rodolfo'],
+            ['nombre_cont' => 'Diteca S.A'],
+            ['nombre_cont' => 'Ing. Bautista Espinosa Jhon Estalin'],
+            ['nombre_cont' => 'Torres Tamayo Jonathan'],
+            ['nombre_cont' => 'Ing. Tipantuña Lema Alvaro Vinicio'],
+            ['nombre_cont' => 'Ing. Edwin Ernesto Toro Duque'],
+            ['nombre_cont' => 'Ing. Efrain Tipán Chancusig'],
+            ['nombre_cont' => 'Consorcio Dabor -Ing. Willian Borja'],
+            ['nombre_cont' => 'Ing. Ludeña Eras Franco'],
+            ['nombre_cont' => 'Consorcio Vial Metro Cuadrado'],
+            ['nombre_cont' => 'Ing. Aguilar Flores Luis Alejandro'],
+            ['nombre_cont' => 'Guilcazo Caillagua Darwin Xavier'],
+            ['nombre_cont' => 'Mullo Tenorio Marco Vinicio'],
+            ['nombre_cont' => 'Salcedocons Soluciones S.A.S.'],
+            ['nombre_cont' => 'Consvieinc CH&T Servyacon Compañía Limitada Cia. Ltda.'],
+            ['nombre_cont' => 'Ambacar Cia. Ltda.'],
+            ['nombre_cont' => 'Constructora Ollumwa HM S.A.'],
+            ['nombre_cont' => 'Sr. Franco Geovanny Mullo Vallejo'],
+            ['nombre_cont' => 'Consorcio Engagement'],
+            ['nombre_cont' => 'Borja Escobar Luis Felipe'],
+            ['nombre_cont' => 'Saing Constructora S.A.S'],
+            ['nombre_cont' => 'Consorcio G.C.C.'],
+            ['nombre_cont' => 'Consorcio Vial Salatilin'],
+            ['nombre_cont' => 'Arca-Cr Total S.A.'],
+            ['nombre_cont' => 'Consorcio San Isidro - Juan Claudio'],
+            ['nombre_cont' => 'Comal S.A.S'],
+            ['nombre_cont' => 'Compañía Conword Construcciones Cia. Conword S.A'],
+            ['nombre_cont' => 'Consorcio Morejon'],
+            ['nombre_cont' => 'Consorcio Castro San Francisco'],
+            ['nombre_cont' => 'Maldonado Hurtado Wilfrido'],
+            ['nombre_cont' => 'CastrosPujili Constructora S.A.S'],
+            ['nombre_cont' => 'Consorcio Construcciones Laguamasa'],
+            ['nombre_cont' => 'Consorcio Los Andes'],
+            ['nombre_cont' => 'Consorcio Vial Toacaso'],
+            ['nombre_cont' => 'Consorcio Charito'],
+            ['nombre_cont' => 'Centinela del Norte JaenPlatinium CIA LTDA.'],
+            ['nombre_cont' => 'Consorcio Haras'],
+            ['nombre_cont' => 'Chacón Espin Jonatan Alexander'],
+            ['nombre_cont' => 'Consorcio Los Pinos'],
+            ['nombre_cont' => 'Consorcio Vial Cotopaxi'],
+            ['nombre_cont' => 'Rueda Osorio Fernando Vicente'],
+            ['nombre_cont' => 'Moreano Moreano Darwin Javier'],
+            ['nombre_cont' => 'ISSC Sociedad Anónima'],
+            ['nombre_cont' => 'Consorcio Vial Pujilí'],
+            ['nombre_cont' => 'Mecanizados Vallejo Vargas Cia. Ltda.'],
+            ['nombre_cont' => 'Unión Cementera Nacional UCEM S.A.'],
+            ['nombre_cont' => 'Consorcio Vial las Pampas'],
+            ['nombre_cont' => 'Consorcio San Juan Norte'],
+            ['nombre_cont' => 'Consorcio Vialgc'],
+            ['nombre_cont' => 'Consorcio Sable'],
+            ['nombre_cont' => 'Castro Vaca Oscar Bolivar'],
+            ['nombre_cont' => 'Consorcio Grupo MVO'],
+            ['nombre_cont' => 'Medina Herrera Hector Mauricio'],
+            ['nombre_cont' => 'Consorcio Hormidecor - Brayan Mullo'],
+            ['nombre_cont' => 'Consorcio Construye Vialidad Uno'],
+            ['nombre_cont' => 'Caiza Monge Edison Rolando'],
+            ['nombre_cont' => 'Consorcio Construaustro'],
+            ['nombre_cont' => 'Petrolcorp S.A.', 'taxid' => '0993320110001'],
+            ['nombre_cont' => 'Atimasa S.A.'],
+            ['nombre_cont' => 'Consorcio Yugsiche JL'],
+            ['nombre_cont' => 'Maquinaria y Vehículos MAVESA'],
+            ['nombre_cont' => 'Silenca S.A.'],
+            ['nombre_cont' => 'Consorcio Riego PJL'],
+            ['nombre_cont' => 'Consorcio Vial Maca'],
+            ['nombre_cont' => 'Consorcio Procesadora Perla Andina'],
+            ['nombre_cont' => 'Edaza & Zambrano Construcciones S.A.'],
+            ['nombre_cont' => 'Consorcio Emi'],
+            ['nombre_cont' => 'MOTORES Y TACTORES MOTRAC S.A.', 'taxid' => '0992745762001'],
+            ['nombre_cont' => 'CONSORCIO SIRIUS'],
+            ['nombre_cont' => 'ING. EDWIN DANIEL CHILIQUINGA LLANGANATE', 'taxid' => '0502877202001'],
+            ['nombre_cont' => 'SRTA. CONSUELO VERÓNICA ALVAREZ IZURIETA', 'taxid' => '0502139595001'],
+        ];
+
+        foreach ($contratistas as $data) {
+            Contratista::create($data);
+        }
+
+        echo "Insertados " . count($contratistas) . " contratistas.\n";
+    }
+}

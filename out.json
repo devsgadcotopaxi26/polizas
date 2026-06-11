@@ -1,0 +1,13 @@
+{
+    "id": 9,
+    "poliza_original_id": 29,
+    "poliza_nueva_id": 30,
+    "fecha_renovacion": "2026-03-04T00:00:00.000000Z",
+    "tipo_renovacion": "manual",
+    "observaciones": "Primera renovaci\u00f3n",
+    "usuario_id": 3,
+    "created_at": "2026-03-04T17:02:08.000000Z",
+    "updated_at": "2026-03-04T17:02:08.000000Z",
+    "archivo_renovacion": "renovaciones\/XGeiosGDnJNPrCH8s1zIfcc2VHw8VCNteHX4x81T.pdf",
+    "estado_firma_asesor": false
+}

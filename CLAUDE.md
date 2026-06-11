@@ -1,0 +1,1 @@
+C:/Users/GESTOR TICS 2/OneDrive/Documents/claude_global_context/CLAUDE_MASTER.md
