@@ -456,7 +456,7 @@ const ejecutarEliminarRenovacion = () => {
                         v-if="
                             !(
                                 $page.props.auth.user.roles &&
-                                ($page.props.auth.user.roles.includes('Asesor Prefectura') ||
+                                ($page.props.auth.user.roles.includes('Prefecto/a') ||
                                  $page.props.auth.user.roles.includes('Gestor Tesorería Ambiente'))
                             )
                         "
@@ -481,7 +481,7 @@ const ejecutarEliminarRenovacion = () => {
                             !poliza.oficio_firmado_tesorero &&
                             !(
                                 $page.props.auth.user.roles &&
-                                ($page.props.auth.user.roles.includes('Asesor Prefectura') ||
+                                ($page.props.auth.user.roles.includes('Prefecto/a') ||
                                  $page.props.auth.user.roles.includes('Gestor Tesorería Ambiente'))
                             )
                         "
@@ -523,7 +523,7 @@ const ejecutarEliminarRenovacion = () => {
                         🖋️ Firmar como Tesorero
                     </button>
 
-                    <!-- Botón para Asesor Prefectura (para pólizas que son renovación de otra y falta firma) -->
+                    <!-- Botón para Prefecto/a (para pólizas que son renovación de otra y falta firma) -->
                     <button
                         v-if="
                             renovacion_de &&
@@ -531,7 +531,7 @@ const ejecutarEliminarRenovacion = () => {
                             renovacion_de.archivo_renovacion &&
                             $page.props.auth.user.roles &&
                             $page.props.auth.user.roles.includes(
-                                'Asesor Prefectura',
+                                'Prefecto/a',
                             )
                         "
                         @click="openSignModal('renovacion')"
@@ -637,7 +637,7 @@ const ejecutarEliminarRenovacion = () => {
                             !(
                                 $page.props.auth.user.roles &&
                                 $page.props.auth.user.roles.includes(
-                                    'Asesor Prefectura',
+                                    'Prefecto/a',
                                 )
                             )
                         "
@@ -651,7 +651,7 @@ const ejecutarEliminarRenovacion = () => {
                             !(
                                 $page.props.auth.user.roles &&
                                 $page.props.auth.user.roles.includes(
-                                    'Asesor Prefectura',
+                                    'Prefecto/a',
                                 )
                             )
                         "

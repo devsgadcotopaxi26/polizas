@@ -16,7 +16,7 @@ const props = defineProps({
     polizas: Object,
     filters: Object,
     esGestorAmbiental: Boolean,
-    esAsesor: Boolean,
+    esPrefecto: Boolean,
 });
 
 const search = ref(props.filters.search);
@@ -27,9 +27,9 @@ const bandeja_tesorero = ref(
     props.filters.bandeja_tesorero === "true" ||
         props.filters.bandeja_tesorero === true,
 );
-const bandeja_asesor = ref(
-    props.filters.bandeja_asesor === "true" ||
-        props.filters.bandeja_asesor === true,
+const bandeja_prefecto = ref(
+    props.filters.bandeja_prefecto === "true" ||
+        props.filters.bandeja_prefecto === true,
 );
 const bandeja_gestor_envio = ref(
     props.filters.bandeja_gestor_envio === "true" ||
@@ -98,7 +98,7 @@ watch(
         categoria,
         subtipo,
         bandeja_tesorero,
-        bandeja_asesor,
+        bandeja_prefecto,
         bandeja_gestor_envio,
         sort_by,
         sort_dir,
@@ -123,7 +123,7 @@ watch(
                     categoria: valCategoria,
                     subtipo: valSubtipo,
                     bandeja_tesorero: valBandejaT ? "true" : null,
-                    bandeja_asesor: valBandejaA ? "true" : null,
+                    bandeja_prefecto: valBandejaA ? "true" : null,
                     bandeja_gestor_envio: valBandejaGE ? "true" : null,
                     sort_by: valSortBy,
                     sort_dir: valSortDir,
@@ -180,7 +180,7 @@ const formatDate = (date) => {
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <a
-                        :href="route('polizas.export_excel', { search, estado, categoria, subtipo, bandeja_tesorero: bandeja_tesorero ? 'true' : null, bandeja_asesor: bandeja_asesor ? 'true' : null, bandeja_gestor_envio: bandeja_gestor_envio ? 'true' : null })"
+                        :href="route('polizas.export_excel', { search, estado, categoria, subtipo, bandeja_tesorero: bandeja_tesorero ? 'true' : null, bandeja_prefecto: bandeja_prefecto ? 'true' : null, bandeja_gestor_envio: bandeja_gestor_envio ? 'true' : null })"
                         class="inline-flex items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-emerald-700 active:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -190,7 +190,7 @@ const formatDate = (date) => {
                     </a>
                     
                     <a
-                        :href="route('polizas.export_pdf', { search, estado, categoria, subtipo, bandeja_tesorero: bandeja_tesorero ? 'true' : null, bandeja_asesor: bandeja_asesor ? 'true' : null, bandeja_gestor_envio: bandeja_gestor_envio ? 'true' : null })"
+                        :href="route('polizas.export_pdf', { search, estado, categoria, subtipo, bandeja_tesorero: bandeja_tesorero ? 'true' : null, bandeja_prefecto: bandeja_prefecto ? 'true' : null, bandeja_gestor_envio: bandeja_gestor_envio ? 'true' : null })"
                         target="_blank"
                         class="inline-flex items-center px-4 py-2 bg-rose-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-rose-700 active:bg-rose-800 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm"
                     >
@@ -240,26 +240,26 @@ const formatDate = (date) => {
                         }}
                     </button>
 
-                    <!-- Bandeja Asesor Prefectura Toggle -->
+                    <!-- Bandeja Prefecto/a Toggle -->
                     <button
                         v-if="
                             $page.props.auth.user.roles &&
                             $page.props.auth.user.roles.includes(
-                                'Asesor Prefectura',
+                                'Prefecto/a',
                             )
                         "
-                        @click="bandeja_asesor = !bandeja_asesor"
+                        @click="bandeja_prefecto = !bandeja_prefecto"
                         :class="[
                             'inline-flex items-center px-4 py-2 border rounded-xl font-bold text-xs uppercase tracking-widest transition shadow-sm',
-                            bandeja_asesor
+                            bandeja_prefecto
                                 ? 'bg-emerald-700 border-transparent text-white hover:bg-emerald-800'
                                 : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50',
                         ]"
                     >
-                        <span v-if="bandeja_asesor" class="mr-2">🔙</span>
+                        <span v-if="bandeja_prefecto" class="mr-2">🔙</span>
                         <span v-else class="mr-2">📝</span>
                         {{
-                            bandeja_asesor
+                            bandeja_prefecto
                                 ? "Ver Todas las Pólizas"
                                 : "Bandeja: Renovaciones Pendientes"
                         }}
@@ -447,7 +447,7 @@ const formatDate = (date) => {
                                         </span>
                                     </th>
                                     <th
-                                        v-if="esAsesor"
+                                        v-if="esPrefecto"
                                         scope="col"
                                         class="px-6 py-4 text-center text-xs font-bold text-slate-500 uppercase tracking-wider"
                                     >
@@ -576,9 +576,9 @@ const formatDate = (date) => {
                                             }}
                                         </span>
                                     </td>
-                                    <!-- Columna Renovación Firmada: solo visible para Asesor Prefectura -->
+                                    <!-- Columna Renovación Firmada: solo visible para Prefecto/a -->
                                     <td
-                                        v-if="esAsesor"
+                                        v-if="esPrefecto"
                                         class="px-6 py-4 whitespace-nowrap text-center"
                                     >
                                         <span
@@ -629,7 +629,7 @@ const formatDate = (date) => {
                                                 </svg>
                                             </Link>
                                             <Link
-                                                v-if="!esAsesor"
+                                                v-if="!esPrefecto"
                                                 :href="
                                                     route(
                                                         'polizas.edit',
