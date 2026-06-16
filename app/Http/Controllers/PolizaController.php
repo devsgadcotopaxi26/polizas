@@ -69,7 +69,7 @@ class PolizaController extends Controller
                 ->where('oficio_firmado_tesorero', false);
         }
 
-        if ($request->filled('bandeja_asesor')) {
+        if ($request->filled('bandeja_prefecto')) {
             $query->whereHas('renovacionDe', function ($q) {
                 // Si la póliza tiene un registro en 'renovacion_nueva_id' de PolizaRenovacion 
                 // entonces ES una renovación. 
@@ -92,9 +92,9 @@ class PolizaController extends Controller
 
         return Inertia::render('Polizas/Index', [
             'polizas'           => $polizas,
-            'filters'           => $request->only(['search', 'estado', 'categoria', 'subtipo', 'bandeja_tesorero', 'bandeja_asesor', 'bandeja_gestor_envio', 'sort_by', 'sort_dir']),
+            'filters'           => $request->only(['search', 'estado', 'categoria', 'subtipo', 'bandeja_tesorero', 'bandeja_prefecto', 'bandeja_gestor_envio', 'sort_by', 'sort_dir']),
             'esGestorAmbiental' => Auth::user()->hasRole('Gestor Tesorería Ambiente'),
-            'esAsesor'          => Auth::user()->hasRole('Asesor Prefectura'),
+            'esPrefecto'          => Auth::user()->hasRole('Prefecto/a'),
         ]);
     }
 
@@ -151,7 +151,7 @@ class PolizaController extends Controller
                 ->where('oficio_firmado_tesorero', false);
         }
 
-        if ($request->filled('bandeja_asesor')) {
+        if ($request->filled('bandeja_prefecto')) {
             $query->whereHas('renovacionDe', function ($q) {
                 $q->whereNotNull('archivo_renovacion')
                     ->where('estado_firma_asesor', false);
@@ -329,7 +329,7 @@ class PolizaController extends Controller
      */
     public function edit(Poliza $poliza)
     {
-        if (Auth::user()->hasRole('Asesor Prefectura')) {
+        if (Auth::user()->hasRole('Prefecto/a')) {
             return redirect()->route('polizas.show', $poliza->id)
                 ->with('error', 'No tienes permisos para editar pólizas.');
         }
@@ -354,7 +354,7 @@ class PolizaController extends Controller
      */
     public function update(Request $request, Poliza $poliza)
     {
-        if (Auth::user()->hasRole('Asesor Prefectura')) {
+        if (Auth::user()->hasRole('Prefecto/a')) {
             return response()->json(['message' => 'No tienes permisos para editar pólizas.'], 403);
         }
 
@@ -707,7 +707,7 @@ class PolizaController extends Controller
     }
 
     /**
-     * Firma interactiva del PDF de renovación (Asesor Prefectura)
+     * Firma interactiva del PDF de renovación (Prefecto/a)
      */
     public function firmarRenovacion(Request $request, Poliza $poliza, \App\Services\SignPdfService $signService)
     {
@@ -719,7 +719,7 @@ class PolizaController extends Controller
         ]);
 
         $user = Auth::user();
-        if (!$user->hasAnyRole(['Asesor Prefectura', 'Administrador', 'Super Admin'])) {
+        if (!$user->hasAnyRole(['Prefecto/a', 'Administrador', 'Super Admin'])) {
             return response()->json(['message' => 'No tienes permisos para firmar renovaciones.'], 403);
         }
 

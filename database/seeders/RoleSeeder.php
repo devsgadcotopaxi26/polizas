@@ -85,8 +85,8 @@ class RoleSeeder extends Seeder
             'ver-dashboard',
         ]);
 
-        // Asesor Prefectura - Consulta y Firma de Renovaciones
-        $asesor = Role::firstOrCreate(['name' => 'Asesor Prefectura']);
+        // Prefecto/a - Consulta y Firma de Renovaciones
+        $asesor = Role::firstOrCreate(['name' => 'Prefecto/a']);
         $asesor->givePermissionTo([
             'ver-polizas',
             'ver-dashboard',
