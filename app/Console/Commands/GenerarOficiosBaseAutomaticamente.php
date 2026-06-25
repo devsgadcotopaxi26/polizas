@@ -25,6 +25,9 @@ class GenerarOficiosBaseAutomaticamente extends Command
      */
     public function handle()
     {
+        $this->info('Comando pausado temporalmente por mantenimiento de secuencias.');
+        return;
+        
         $dias = (int) \App\Models\Configuracion::getValor('dias_anticipacion_oficio', 8);
         $today = now()->startOfDay();
         $targetDate = now()->addDays($dias)->endOfDay();
@@ -51,8 +54,9 @@ class GenerarOficiosBaseAutomaticamente extends Command
                 $poliza->load(['sucursal.aseguradora', 'sucursal.ciudad', 'contrato.contratista', 'contrato.administrador', 'usuario']);
 
                 // Generar un nuevo oficio con número incremental real
-                $oficio = \App\Models\Oficio::generarSiguiente();
-                $numeroOficio = $oficio->codigo_completo;
+                // $oficio = \App\Models\Oficio::generarSiguiente();
+                // $numeroOficio = $oficio->codigo_completo;
+                $numeroOficio = 'PENDIENTE';
 
                 $fileName = 'oficios/Oficio_Renovacion_' . $poliza->id . '.pdf';
 
@@ -64,7 +68,7 @@ class GenerarOficiosBaseAutomaticamente extends Command
                 \Illuminate\Support\Facades\Storage::disk('public')->put($fileName, $pdfContent);
 
                 $poliza->oficio_path = $fileName;
-                $poliza->oficio_id = $oficio->id;
+                // $poliza->oficio_id = $oficio->id;
                 $poliza->save();
 
                 $this->info('Oficio base generado exitosamente para póliza: ' . $poliza->numero_poliza);
