@@ -576,9 +576,8 @@ class PolizaController extends Controller
                 : ($poliza->id . '-' . date('Y') . '-GADPC-T-POLIZA');
         } else {
             // Generar un nuevo oficio con número incremental real
-            // $oficio = Oficio::generarSiguiente();
-            // $numeroOficio = $oficio->codigo_completo;
-            $numeroOficio = 'PENDIENTE';
+            $oficio = Oficio::generarSiguiente();
+            $numeroOficio = $oficio->codigo_completo;
 
             $fileName = 'oficios/Oficio_Renovacion_' . $poliza->id . '.pdf';
 
@@ -589,7 +588,7 @@ class PolizaController extends Controller
             // Guardar el documento base
             \Storage::put($fileName, $pdfContent);
             $poliza->oficio_path = $fileName;
-            // $poliza->oficio_id = $oficio->id;
+            $poliza->oficio_id = $oficio->id;
             $poliza->save();
         }
 
