@@ -165,19 +165,26 @@ def _draw_custom_stamp(output_pdf_path: str, box, signer_name: str):
     c.save()
 
 
-def sign_pdf(input_pdf, output_pdf, p12_path, password, name, reason="",
+def sign_pdf(input_pdf, output_pdf, name, p12_path=None, password=None, pem_path=None, reason="",
              is_tesorero=False, is_gestor=False,
              sig_x=None, sig_y=None, sig_page=None,
              location="", app_version="", app_name="", tsa_url=""):
 
-    # ---------- Cargar clave privada / certificado ----------
-    with open(p12_path, 'rb') as f:
-        p12_bytes = f.read()
-
     import oscrypto.keys
-    private_key_oscrypto, certificate_oscrypto, _ = oscrypto.keys.parse_pkcs12(
-        p12_bytes, password.encode()
-    )
+    # ---------- Cargar clave privada / certificado ----------
+    if pem_path:
+        with open(pem_path, 'rb') as f:
+            pem_bytes = f.read()
+        private_key_oscrypto = oscrypto.keys.parse_private(pem_bytes)
+        certificate_oscrypto = oscrypto.keys.parse_certificate(pem_bytes)
+    elif p12_path and password:
+        with open(p12_path, 'rb') as f:
+            p12_bytes = f.read()
+        private_key_oscrypto, certificate_oscrypto, _ = oscrypto.keys.parse_pkcs12(
+            p12_bytes, password.encode()
+        )
+    else:
+        raise ValueError("Se debe proveer --pem o bien --p12 y --password")
 
     signer = signers.SimpleSigner(
         signing_cert=certificate_oscrypto,
@@ -274,8 +281,9 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Firmar PDF con pyHanko + sello visual ReportLab")
     parser.add_argument("--input",    required=True)
     parser.add_argument("--output",   required=True)
-    parser.add_argument("--p12",      required=True)
-    parser.add_argument("--password", required=True)
+    parser.add_argument("--p12",      required=False, default=None)
+    parser.add_argument("--password", required=False, default=None)
+    parser.add_argument("--pem",      required=False, default=None)
     parser.add_argument("--name",     required=True)
     parser.add_argument("--reason",   default="")
     parser.add_argument("--sig-x",    type=float, default=None)
@@ -297,10 +305,12 @@ if __name__ == "__main__":
     is_gestor   = "Gestor" in args.roles or "Gestor de Tesorería" in args.roles
 
     try:
-        sign_pdf(args.input, args.output, args.p12, args.password,
-                 args.name, args.reason, is_tesorero, is_gestor,
-                 args.sig_x, args.sig_y, args.sig_page, args.location,
-                 args.app_version, args.app_name, args.tsa_url)
+        sign_pdf(args.input, args.output, args.name,
+                 p12_path=args.p12, password=args.password, pem_path=args.pem,
+                 reason=args.reason, is_tesorero=is_tesorero, is_gestor=is_gestor,
+                 sig_x=args.sig_x, sig_y=args.sig_y, sig_page=args.sig_page,
+                 location=args.location, app_version=args.app_version,
+                 app_name=args.app_name, tsa_url=args.tsa_url)
     except Exception as e:
         import traceback
         print(f"ERROR: {str(e)}")
