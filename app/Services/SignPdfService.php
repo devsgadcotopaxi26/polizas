@@ -50,7 +50,12 @@ class SignPdfService
         @unlink($tempP12Path);
 
         if ($output === null || strpos($output, 'Mac verify error') !== false || strpos($output, 'invalid password') !== false) {
-            throw new \Exception('Contraseña del certificado incorrecta.');
+            throw new \Exception('La contraseña de la firma electrónica es incorrecta.');
+        }
+
+        if (strpos($output, 'BEGIN CERTIFICATE') === false || (strpos($output, 'BEGIN PRIVATE KEY') === false && strpos($output, 'BEGIN RSA PRIVATE KEY') === false)) {
+            \Illuminate\Support\Facades\Log::error("OpenSSL extraction failed: " . $output);
+            throw new \Exception('El certificado tiene un formato no soportado o está dañado.');
         }
 
         preg_match('/-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----/s', $output, $certMatches);
@@ -59,6 +64,10 @@ class SignPdfService
             $certInfo = openssl_x509_parse($certMatches[0]);
             $cn = $certInfo['subject']['CN'] ?? $nombreFirmante;
         }
+
+        // Guardar el PEM extraído en un archivo temporal para pasarlo a Python (sin encriptación, bypass de legacy en OpenSSL 3)
+        $tempPemPath = storage_path('app/temp_pem_' . uniqid() . '.pem');
+        file_put_contents($tempPemPath, $output);
 
         // 2. Aplicar Firma Criptográfica y Estampado Visual Secuencial usando Python (pyHanko)
         // Guardamos el PDF de entrada (que puede estar o no firmado ya) en temporal
@@ -81,12 +90,11 @@ class SignPdfService
         $tsaUrl     = config('app.firma_tsa_url', '');
 
         $pythonCommand = sprintf(
-            'python %s --input %s --output %s --p12 %s --password %s --name %s --reason %s %s %s %s --location %s --app-version %s --app-name %s --tsa-url %s %s 2>&1',
+            'python %s --input %s --output %s --pem %s --name %s --reason %s %s %s %s --location %s --app-version %s --app-name %s --tsa-url %s %s 2>&1',
             escapeshellarg($pythonScriptPath),
             escapeshellarg($tempInputFile),
             escapeshellarg($tempSignedFile),
-            escapeshellarg($p12CertPath),
-            escapeshellarg($password),
+            escapeshellarg($tempPemPath),
             escapeshellarg($cn),
             escapeshellarg(""),
             $sigX !== null ? '--sig-x ' . escapeshellarg((string) $sigX) : '',
@@ -122,6 +130,7 @@ class SignPdfService
         // Limpieza
         @unlink($tempInputFile);
         @unlink($tempSignedFile);
+        @unlink($tempPemPath);
 
         return $finalContent;
     }
