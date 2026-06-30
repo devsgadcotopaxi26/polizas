@@ -169,7 +169,7 @@ def sign_pdf(input_pdf, output_pdf, name, p12_path=None, password=None, cert_pat
              is_tesorero=False, is_gestor=False,
              sig_x=None, sig_y=None, sig_page=None,
              location="", app_version="", app_name="", tsa_url=""):
-
+ 
     import oscrypto.keys
     # ---------- Cargar clave privada / certificado ----------
     if cert_path and key_path:
