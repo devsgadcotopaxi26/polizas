@@ -165,18 +165,20 @@ def _draw_custom_stamp(output_pdf_path: str, box, signer_name: str):
     c.save()
 
 
-def sign_pdf(input_pdf, output_pdf, name, p12_path=None, password=None, pem_path=None, reason="",
+def sign_pdf(input_pdf, output_pdf, name, p12_path=None, password=None, cert_path=None, key_path=None, reason="",
              is_tesorero=False, is_gestor=False,
              sig_x=None, sig_y=None, sig_page=None,
              location="", app_version="", app_name="", tsa_url=""):
 
     import oscrypto.keys
     # ---------- Cargar clave privada / certificado ----------
-    if pem_path:
-        with open(pem_path, 'rb') as f:
-            pem_bytes = f.read()
-        private_key_oscrypto = oscrypto.keys.parse_private(pem_bytes)
-        certificate_oscrypto = oscrypto.keys.parse_certificate(pem_bytes)
+    if cert_path and key_path:
+        with open(key_path, 'rb') as f:
+            key_bytes = f.read()
+        with open(cert_path, 'rb') as f:
+            cert_bytes = f.read()
+        private_key_oscrypto = oscrypto.keys.parse_private(key_bytes)
+        certificate_oscrypto = oscrypto.keys.parse_certificate(cert_bytes)
     elif p12_path and password:
         with open(p12_path, 'rb') as f:
             p12_bytes = f.read()
@@ -184,7 +186,7 @@ def sign_pdf(input_pdf, output_pdf, name, p12_path=None, password=None, pem_path
             p12_bytes, password.encode()
         )
     else:
-        raise ValueError("Se debe proveer --pem o bien --p12 y --password")
+        raise ValueError("Se debe proveer --cert y --key, o bien --p12 y --password")
 
     signer = signers.SimpleSigner(
         signing_cert=certificate_oscrypto,
@@ -283,7 +285,8 @@ if __name__ == "__main__":
     parser.add_argument("--output",   required=True)
     parser.add_argument("--p12",      required=False, default=None)
     parser.add_argument("--password", required=False, default=None)
-    parser.add_argument("--pem",      required=False, default=None)
+    parser.add_argument("--cert",     required=False, default=None)
+    parser.add_argument("--key",      required=False, default=None)
     parser.add_argument("--name",     required=True)
     parser.add_argument("--reason",   default="")
     parser.add_argument("--sig-x",    type=float, default=None)
@@ -306,7 +309,7 @@ if __name__ == "__main__":
 
     try:
         sign_pdf(args.input, args.output, args.name,
-                 p12_path=args.p12, password=args.password, pem_path=args.pem,
+                 p12_path=args.p12, password=args.password, cert_path=args.cert, key_path=args.key,
                  reason=args.reason, is_tesorero=is_tesorero, is_gestor=is_gestor,
                  sig_x=args.sig_x, sig_y=args.sig_y, sig_page=args.sig_page,
                  location=args.location, app_version=args.app_version,

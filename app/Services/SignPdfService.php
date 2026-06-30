@@ -59,15 +59,27 @@ class SignPdfService
         }
 
         preg_match('/-----BEGIN CERTIFICATE-----.*?-----END CERTIFICATE-----/s', $output, $certMatches);
-        $cn = $nombreFirmante; // Fallback
-        if (!empty($certMatches)) {
-            $certInfo = openssl_x509_parse($certMatches[0]);
-            $cn = $certInfo['subject']['CN'] ?? $nombreFirmante;
+        preg_match('/-----BEGIN (?:RSA )?PRIVATE KEY-----.*?-----END (?:RSA )?PRIVATE KEY-----/s', $output, $keyMatches);
+
+        if (empty($certMatches) || empty($keyMatches)) {
+            \Illuminate\Support\Facades\Log::error("OpenSSL Regex extraction failed: " . $output);
+            throw new \Exception('El certificado tiene un formato no soportado o no se encontró la llave privada.');
         }
 
-        // Guardar el PEM extraído en un archivo temporal para pasarlo a Python (sin encriptación, bypass de legacy en OpenSSL 3)
-        $tempPemPath = storage_path('app/temp_pem_' . uniqid() . '.pem');
-        file_put_contents($tempPemPath, $output);
+        $certContent = $certMatches[0];
+        $keyContent = $keyMatches[0];
+
+        $cn = $nombreFirmante; // Fallback
+        $certInfo = openssl_x509_parse($certContent);
+        if ($certInfo && isset($certInfo['subject']['CN'])) {
+            $cn = $certInfo['subject']['CN'];
+        }
+
+        // Guardar el PEM extraído en archivos temporales limpios
+        $tempCertPath = storage_path('app/temp_cert_' . uniqid() . '.pem');
+        $tempKeyPath = storage_path('app/temp_key_' . uniqid() . '.pem');
+        file_put_contents($tempCertPath, $certContent);
+        file_put_contents($tempKeyPath, $keyContent);
 
         // 2. Aplicar Firma Criptográfica y Estampado Visual Secuencial usando Python (pyHanko)
         // Guardamos el PDF de entrada (que puede estar o no firmado ya) en temporal
@@ -90,11 +102,12 @@ class SignPdfService
         $tsaUrl     = config('app.firma_tsa_url', '');
 
         $pythonCommand = sprintf(
-            'python %s --input %s --output %s --pem %s --name %s --reason %s %s %s %s --location %s --app-version %s --app-name %s --tsa-url %s %s 2>&1',
+            'python %s --input %s --output %s --cert %s --key %s --name %s --reason %s %s %s %s --location %s --app-version %s --app-name %s --tsa-url %s %s 2>&1',
             escapeshellarg($pythonScriptPath),
             escapeshellarg($tempInputFile),
             escapeshellarg($tempSignedFile),
-            escapeshellarg($tempPemPath),
+            escapeshellarg($tempCertPath),
+            escapeshellarg($tempKeyPath),
             escapeshellarg($cn),
             escapeshellarg(""),
             $sigX !== null ? '--sig-x ' . escapeshellarg((string) $sigX) : '',
@@ -130,7 +143,8 @@ class SignPdfService
         // Limpieza
         @unlink($tempInputFile);
         @unlink($tempSignedFile);
-        @unlink($tempPemPath);
+        @unlink($tempCertPath);
+        @unlink($tempKeyPath);
 
         return $finalContent;
     }
