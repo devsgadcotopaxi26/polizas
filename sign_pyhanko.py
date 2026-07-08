@@ -126,41 +126,53 @@ def _draw_custom_stamp(output_pdf_path: str, box, signer_name: str):
     c.drawImage(ImageReader(qr_buf), qr_x, qr_y,
                 width=qr_size, height=qr_size, preserveAspectRatio=True)
 
-    # ---- Texto a la derecha: centrado verticalmente respecto al QR ----
-    text_x = qr_size + PAD * 2
+    # ---- Texto a la derecha ----
+    text_x = qr_size + PAD      # Acercar texto al QR
+    font_label = 4.8            # Tamaño letra normal
+    font_name  = 8.1            # Tamaño nombre en negrita
+    
+    gap_head  = 7.5     # Acercar nombre a "Firmado..."
+    gap_lines = 8.5     # Entre nombre y apellido
+    gap_foot  = 10.0    # Alejar "Validar..." de nombre
 
-    font_label = 7.5    # Regular
-    font_name  = 9.5    # Bold
-    lh_label   = font_label + 2.5   # interlineado etiqueta
-    lh_name    = font_name  + 2.5   # interlineado nombre
-
-    # Altura total del bloque de texto
     n_name_lines = 2 if nombres else 1
-    block_h = lh_label + (lh_name * n_name_lines) + lh_label
+    # Distancia vertical total entre baselines
+    total_baseline_dist = gap_head + gap_foot + (gap_lines if n_name_lines == 2 else 0)
+    
+    qr_center_y = PAD + qr_size / 2
+    y_cur = qr_center_y + total_baseline_dist / 2
 
-    # Centro vertical del QR → primera línea encima del centro, última debajo
-    qr_center_y = qr_y + qr_size / 2
-    y_cur = qr_center_y + block_h / 2 - font_label
+    def _draw_with_charspace(canvas_obj, x, y, text, font, size, char_space=0.0, double_pass_offset=0.0):
+        """Dibuja texto con espaciado entre caracteres usando PDFTextObject."""
+        t = canvas_obj.beginText(x, y)
+        t.setFont(font, size)
+        t.setCharSpace(char_space)
+        t.textOut(text)
+        canvas_obj.drawText(t)
+        if double_pass_offset > 0:
+            # Segunda pasada desplazada para dar más peso/bold
+            t2 = canvas_obj.beginText(x + double_pass_offset, y)
+            t2.setFont(font, size)
+            t2.setCharSpace(char_space)
+            t2.textOut(text)
+            canvas_obj.drawText(t2)
 
     c.setFillColor(colors.black)
+    # Doble pasada sutil (0.15) a letras normales para imitar el "peso" que tiene en FirmaEC
+    _draw_with_charspace(c, text_x, y_cur, "Firmado electrónicamente por:", FONT_REG, font_label, double_pass_offset=0.15)
 
-    # Línea 1 – pie (ahora arriba) — fuente ligeramente menor para que quepa completo
-    c.setFont(FONT_REG, 7.0)
-    c.drawString(text_x, y_cur, "Validar únicamente en FirmaEC.")
+    y_cur -= gap_head
+    # Nombres con charspace ligero y pasada fuerte (0.3)
+    _draw_with_charspace(c, text_x, y_cur, apellidos, FONT_BOLD, font_name,
+                         char_space=0.3, double_pass_offset=0.3)
 
-    # Línea 2 – etiqueta
-    y_cur -= lh_label
-    c.drawString(text_x, y_cur, "Firmado electrónicamente por:")
-
-    # Línea 3 – apellidos
-    y_cur -= lh_name
-    c.setFont(FONT_BOLD, font_name)
-    c.drawString(text_x, y_cur, apellidos)
-
-    # Línea 4 – nombres (si existen)
     if nombres:
-        y_cur -= lh_name
-        c.drawString(text_x, y_cur, nombres)
+        y_cur -= gap_lines
+        _draw_with_charspace(c, text_x, y_cur, nombres, FONT_BOLD, font_name,
+                             char_space=0.3, double_pass_offset=0.3)
+
+    y_cur -= gap_foot
+    _draw_with_charspace(c, text_x, y_cur, "Validar únicamente en FirmaEC.", FONT_REG, font_label, double_pass_offset=0.15)
 
     c.save()
 
@@ -168,9 +180,10 @@ def _draw_custom_stamp(output_pdf_path: str, box, signer_name: str):
 def sign_pdf(input_pdf, output_pdf, name, p12_path=None, password=None, cert_path=None, key_path=None, reason="",
              is_tesorero=False, is_gestor=False,
              sig_x=None, sig_y=None, sig_page=None,
-             location="", app_version="", app_name="", tsa_url=""):
+             location="", app_version="", app_name="", tsa_url="", positions=None):
  
     import oscrypto.keys
+    import tempfile
     # ---------- Cargar clave privada / certificado ----------
     if cert_path and key_path:
         with open(key_path, 'rb') as f:
@@ -194,92 +207,113 @@ def sign_pdf(input_pdf, output_pdf, name, p12_path=None, password=None, cert_pat
         cert_registry=None
     )
 
-    # ---------- Determinar coordenadas y página ----------
-    with open(input_pdf, 'rb') as doc:
-        reader = PdfFileReader(doc, strict=False)
-        try:
-            page_count = len(reader.root['/Pages']['/Kids'])
-        except KeyError:
-            page_count = 1
+    if not positions:
+        positions = [{"x": sig_x, "y": sig_y, "page": sig_page}]
 
-        if sig_x is not None and sig_y is not None:
-            box = (sig_x, sig_y, sig_x + 250, sig_y + 80)
-        else:
-            x1 = 380 if is_tesorero else 70
-            box = (x1, 680, x1 + 250, 800)
+    current_input = input_pdf
 
-        target_page = page_count - 1
-        if sig_page is not None and 1 <= sig_page <= page_count:
-            target_page = int(sig_page) - 1
+    for i, pos in enumerate(positions):
+        # ---------- Determinar coordenadas y página ----------
+        x = pos.get("x")
+        y = pos.get("y")
+        page = pos.get("page")
 
-    # ---- PASO 1: Estampado visual (ReportLab) ----
-    import tempfile
-    stamped_tmp = tempfile.mktemp(suffix=".pdf")
-    _draw_custom_stamp(stamped_tmp, box, name)
+        with open(current_input, 'rb') as doc:
+            reader = PdfFileReader(doc, strict=False)
+            try:
+                page_count = len(reader.root['/Pages']['/Kids'])
+            except KeyError:
+                page_count = 1
 
-    # ---- PASO 2: Firma criptográfica (pyHanko) ----
-    with open(input_pdf, 'rb') as doc:
-        reader = PdfFileReader(doc, strict=False)
-        writer = IncrementalPdfFileWriter(doc, strict=False)
+            if x is not None and y is not None:
+                box = (x, y, x + 250, y + 80)
+            else:
+                x1 = 380 if is_tesorero else 70
+                box = (x1, 680, x1 + 250, 800)
 
-        existing = len(reader.embedded_signatures)
-        if is_tesorero:
-            sig_field_name = f"Signature_Tesoreria_{existing + 1}"
-        elif is_gestor:
-            sig_field_name = f"Signature_Gestor_{existing + 1}"
-        else:
-            sig_field_name = f"Signature{existing + 1}"
+            target_page = page_count - 1
+            if page is not None and 1 <= int(page) <= page_count:
+                target_page = int(page) - 1
 
-        # Metadata y Versión (Prop_Build)
-        # Adobe muestra: "La firma se creó con la versión {app_version} ({app_name})"
-        build_label = f"{app_name} {app_version}".strip() if app_name else app_version
-        bp = BuildProps(name=build_label) if build_label else None
-        meta = signers.PdfSignatureMetadata(
-            field_name=sig_field_name,
-            reason=reason if reason else "",
-            location=location if location else "",
-            contact_info="", # El parche lo convertirá a TextStringObject('')
-            md_algorithm='sha512',
-            app_build_props=bp
-        )
+        # ---- PASO 1: Estampado visual (ReportLab) ----
+        stamped_tmp = tempfile.mktemp(suffix=".pdf")
+        _draw_custom_stamp(stamped_tmp, box, name)
 
-        from pyhanko.sign.signers.pdf_signer import PdfSigner
-        from pyhanko.stamp import StaticStampStyle
+        is_last = (i == len(positions) - 1)
+        current_output = output_pdf if is_last else tempfile.mktemp(suffix=".pdf")
 
-        # Insertamos el diseño visual dinámico dibujado previamente en el archivo temporal
-        stamp_style = StaticStampStyle.from_pdf_file(stamped_tmp, border_width=0)
+        # ---- PASO 2: Firma criptográfica (pyHanko) ----
+        with open(current_input, 'rb') as doc:
+            reader = PdfFileReader(doc, strict=False)
+            writer = IncrementalPdfFileWriter(doc, strict=False)
 
-        timestamper = HTTPTimeStamper(tsa_url) if tsa_url else None
+            existing = len(reader.embedded_signatures)
+            if is_tesorero:
+                sig_field_name = f"Signature_Tesoreria_{existing + 1}"
+            elif is_gestor:
+                sig_field_name = f"Signature_Gestor_{existing + 1}"
+            else:
+                sig_field_name = f"Signature{existing + 1}"
 
-        pdf_signer_instance = PdfSigner(
-            signature_meta=meta,
-            signer=signer,
-            stamp_style=stamp_style,
-            timestamper=timestamper
-        )
-
-        append_signature_field(
-            writer,
-            SigFieldSpec(
-                sig_field_name=sig_field_name,
-                on_page=target_page,
-                box=box
+            # Metadata y Versión (Prop_Build)
+            # Adobe muestra: "La firma se creó con la versión {app_version} ({app_name})"
+            build_label = f"{app_name} {app_version}".strip() if app_name else app_version
+            bp = BuildProps(name=build_label) if build_label else None
+            meta = signers.PdfSignatureMetadata(
+                field_name=sig_field_name,
+                reason=reason if reason else "",
+                location=location if location else "",
+                contact_info="", # El parche lo convertirá a TextStringObject('')
+                md_algorithm='sha512',
+                app_build_props=bp
             )
-        )
 
-        with open(output_pdf, 'wb') as outf:
-            pdf_signer_instance.sign_pdf(writer, in_place=False, output=outf)
+            from pyhanko.sign.signers.pdf_signer import PdfSigner
+            from pyhanko.stamp import StaticStampStyle
 
-    try:
-        os.unlink(stamped_tmp)
-    except Exception:
-        pass
+            # Insertamos el diseño visual dinámico dibujado previamente en el archivo temporal
+            stamp_style = StaticStampStyle.from_pdf_file(stamped_tmp, border_width=0)
+
+            timestamper = HTTPTimeStamper(tsa_url) if tsa_url else None
+
+            pdf_signer_instance = PdfSigner(
+                signature_meta=meta,
+                signer=signer,
+                stamp_style=stamp_style,
+                timestamper=timestamper
+            )
+
+            append_signature_field(
+                writer,
+                SigFieldSpec(
+                    sig_field_name=sig_field_name,
+                    on_page=target_page,
+                    box=box
+                )
+            )
+
+            with open(current_output, 'wb') as outf:
+                pdf_signer_instance.sign_pdf(writer, in_place=False, output=outf)
+
+        try:
+            os.unlink(stamped_tmp)
+        except Exception:
+            pass
+
+        if current_input != input_pdf:
+            try:
+                os.unlink(current_input)
+            except Exception:
+                pass
+
+        current_input = current_output
 
     print("SUCCESS")
 
 
 if __name__ == "__main__":
     import argparse
+    import json
     parser = argparse.ArgumentParser(description="Firmar PDF con pyHanko + sello visual ReportLab")
     parser.add_argument("--input",    required=True)
     parser.add_argument("--output",   required=True)
@@ -297,6 +331,7 @@ if __name__ == "__main__":
     parser.add_argument("--app-name",  default="")
     parser.add_argument("--tsa-url",   default="")
     parser.add_argument("--roles",     nargs='*',  default=[])
+    parser.add_argument("--positions-base64", default=None, help="Base64 encoded JSON string con arreglo de coordenadas")
 
     try:
         args = parser.parse_args()
@@ -306,6 +341,16 @@ if __name__ == "__main__":
 
     is_tesorero = "Tesorero" in args.roles
     is_gestor   = "Gestor" in args.roles or "Gestor de Tesorería" in args.roles
+    
+    positions_list = None
+    if args.positions_base64:
+        import base64
+        try:
+            decoded = base64.b64decode(args.positions_base64).decode('utf-8')
+            positions_list = json.loads(decoded)
+        except Exception as e:
+            print(f"ERROR PARSING POSITIONS BASE64: {str(e)}")
+            sys.exit(1)
 
     try:
         sign_pdf(args.input, args.output, args.name,
@@ -313,7 +358,7 @@ if __name__ == "__main__":
                  reason=args.reason, is_tesorero=is_tesorero, is_gestor=is_gestor,
                  sig_x=args.sig_x, sig_y=args.sig_y, sig_page=args.sig_page,
                  location=args.location, app_version=args.app_version,
-                 app_name=args.app_name, tsa_url=args.tsa_url)
+                 app_name=args.app_name, tsa_url=args.tsa_url, positions=positions_list)
     except Exception as e:
         import traceback
         print(f"ERROR: {str(e)}")

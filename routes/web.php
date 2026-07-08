@@ -45,6 +45,7 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
     Route::post('polizas/{poliza}/regenerar-oficio', [PolizaController::class, 'regenerarOficio'])->name('polizas.regenerar_oficio');
     Route::get('polizas/{poliza}/renovacion-pdf', [PolizaController::class, 'getPdfRenovacion'])->name('polizas.renovacion_pdf');
     Route::post('polizas/{poliza}/renovacion-firmar', [PolizaController::class, 'firmarRenovacion'])->name('polizas.renovacion_firmar');
+    Route::post('polizas/{poliza}/renovacion-final', [PolizaController::class, 'subirRenovacionFinal'])->name('polizas.renovacion_final');
     Route::post('polizas/{poliza}/enviar-oficio', [PolizaController::class, 'enviarOficio'])->name('polizas.enviar_oficio');
     Route::delete('polizas/{polizaNueva}/eliminar-renovacion', [PolizaController::class, 'eliminarRenovacion'])->name('polizas.eliminar_renovacion');
     Route::resource('aseguradoras', AseguradoraController::class);
