@@ -42,14 +42,14 @@ class PolizaController extends Controller
         if ($request->filled('estado')) {
             if ($request->estado === 'vencida') {
                 $query->whereIn('estado', ['vigente', 'acta_provisional', 'original'])
-                      ->whereNotNull('fecha_vencimiento')
-                      ->where('fecha_vencimiento', '<', now()->startOfDay());
+                    ->whereNotNull('fecha_vencimiento')
+                    ->where('fecha_vencimiento', '<', now()->startOfDay());
             } elseif (in_array($request->estado, ['vigente', 'acta_provisional', 'original'])) {
                 $query->where('estado', $request->estado)
-                      ->where(function ($q) {
-                          $q->whereNull('fecha_vencimiento')
+                    ->where(function ($q) {
+                        $q->whereNull('fecha_vencimiento')
                             ->orWhere('fecha_vencimiento', '>=', now()->startOfDay());
-                      });
+                    });
             } else {
                 $query->where('estado', $request->estado);
             }
@@ -84,17 +84,24 @@ class PolizaController extends Controller
                 ->where('oficio_firmado_tesorero', true);
         }
 
+        if ($request->filled('bandeja_gestor_archivo')) {
+            $query->whereHas('renovacionDe', function ($q) {
+                $q->whereNotNull('archivo_renovacion')
+                    ->where('estado_firma_asesor', true);
+            });
+        }
+
         $sortableColumns = ['codigo', 'numero_poliza', 'fecha_vencimiento', 'valor_asegurado', 'estado', 'created_at'];
-        $sortBy  = in_array($request->sort_by, $sortableColumns) ? $request->sort_by : 'created_at';
+        $sortBy = in_array($request->sort_by, $sortableColumns) ? $request->sort_by : 'created_at';
         $sortDir = $request->sort_dir === 'asc' ? 'asc' : 'desc';
 
         $polizas = $query->orderBy($sortBy, $sortDir)->paginate(10)->withQueryString();
 
         return Inertia::render('Polizas/Index', [
-            'polizas'           => $polizas,
-            'filters'           => $request->only(['search', 'estado', 'categoria', 'subtipo', 'bandeja_tesorero', 'bandeja_prefecto', 'bandeja_gestor_envio', 'sort_by', 'sort_dir']),
+            'polizas' => $polizas,
+            'filters' => $request->only(['search', 'estado', 'categoria', 'subtipo', 'bandeja_tesorero', 'bandeja_prefecto', 'bandeja_gestor_envio', 'bandeja_gestor_archivo', 'sort_by', 'sort_dir']),
             'esGestorAmbiental' => Auth::user()->hasRole('Gestor Tesorería Ambiente'),
-            'esPrefecto'          => Auth::user()->hasRole('Prefecto/a'),
+            'esPrefecto' => Auth::user()->hasRole('Prefecto/a'),
         ]);
     }
 
@@ -124,14 +131,14 @@ class PolizaController extends Controller
         if ($request->filled('estado')) {
             if ($request->estado === 'vencida') {
                 $query->whereIn('estado', ['vigente', 'acta_provisional', 'original'])
-                      ->whereNotNull('fecha_vencimiento')
-                      ->where('fecha_vencimiento', '<', now()->startOfDay());
+                    ->whereNotNull('fecha_vencimiento')
+                    ->where('fecha_vencimiento', '<', now()->startOfDay());
             } elseif (in_array($request->estado, ['vigente', 'acta_provisional', 'original'])) {
                 $query->where('estado', $request->estado)
-                      ->where(function ($q) {
-                          $q->whereNull('fecha_vencimiento')
+                    ->where(function ($q) {
+                        $q->whereNull('fecha_vencimiento')
                             ->orWhere('fecha_vencimiento', '>=', now()->startOfDay());
-                      });
+                    });
             } else {
                 $query->where('estado', $request->estado);
             }
@@ -164,6 +171,13 @@ class PolizaController extends Controller
                 ->where('oficio_firmado_tesorero', true);
         }
 
+        if ($request->filled('bandeja_gestor_archivo')) {
+            $query->whereHas('renovacionDe', function ($q) {
+                $q->whereNotNull('archivo_renovacion')
+                    ->where('estado_firma_asesor', true);
+            });
+        }
+
         return $query->latest();
     }
 
@@ -191,10 +205,15 @@ class PolizaController extends Controller
 
         // Escribir encabezados
         $headerRow = \OpenSpout\Common\Entity\Row::fromValues([
-            'N° Póliza', 'Categoría', 'Subtipo', 'Valor Asegurado',
-            'Fecha Inicio', 'Fecha Vencimiento', 
+            'N° Póliza',
+            'Categoría',
+            'Subtipo',
+            'Valor Asegurado',
+            'Fecha Inicio',
+            'Fecha Vencimiento',
             $esGestorAmbiental ? 'Operador Ambiental' : 'Contratista',
-            'Aseguradora', 'Estado',
+            'Aseguradora',
+            'Estado',
         ], $headerStyle);
         $writer->addRow($headerRow);
 
@@ -236,7 +255,7 @@ class PolizaController extends Controller
         $esGestorAmbiental = Auth::user()->hasRole('Gestor Tesorería Ambiente');
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('exports.pdf_polizas', compact('polizas', 'generadoPor', 'esGestorAmbiental'))
             ->setPaper('A4', 'landscape');
-            
+
         return $pdf->stream('polizas_' . date('Y_m_d_H_i') . '.pdf');
     }
 
@@ -246,7 +265,8 @@ class PolizaController extends Controller
     public function create()
     {
         return Inertia::render('Polizas/Create', [
-            'aseguradoras' => SucursalAseguradora::with(['aseguradora', 'ciudad'])->whereHas('aseguradora', function($q) { $q->where('activo', true); })->get(),
+            'aseguradoras' => SucursalAseguradora::with(['aseguradora', 'ciudad'])->whereHas('aseguradora', function ($q) {
+                $q->where('activo', true); })->get(),
             'contratos' => Contrato::with('contratista')->get(),
             'operadores_ambientales' => \App\Models\OperadorAmbiental::orderBy('nombre')->get(),
             'categorias_subtipos' => Poliza::CATEGORIAS_SUBTIPOS,
@@ -316,11 +336,11 @@ class PolizaController extends Controller
             ->get();
 
         return Inertia::render('Polizas/Show', [
-            'poliza'                 => $poliza,
-            'renovacion_de'          => $renovacionDe,
-            'renovacion_hecha'       => $renovacionHecha,
+            'poliza' => $poliza,
+            'renovacion_de' => $renovacionDe,
+            'renovacion_hecha' => $renovacionHecha,
             'historial_renovaciones' => $historialRenovaciones,
-            'contador_renovaciones'  => $poliza->contarRenovaciones(),
+            'contador_renovaciones' => $poliza->contarRenovaciones(),
         ]);
     }
 
@@ -340,7 +360,8 @@ class PolizaController extends Controller
         return Inertia::render('Polizas/Edit', [
             'poliza' => $poliza,
             'renovacion_de' => $renovacionDe,
-            'aseguradoras' => SucursalAseguradora::with(['aseguradora', 'ciudad'])->whereHas('aseguradora', function($q) { $q->where('activo', true); })->get(),
+            'aseguradoras' => SucursalAseguradora::with(['aseguradora', 'ciudad'])->whereHas('aseguradora', function ($q) {
+                $q->where('activo', true); })->get(),
             'contratos' => Contrato::with('contratista')->get(),
             'operadores_ambientales' => \App\Models\OperadorAmbiental::orderBy('nombre')->get(),
             'categorias_subtipos' => Poliza::CATEGORIAS_SUBTIPOS,
@@ -599,6 +620,7 @@ class PolizaController extends Controller
                 'sig_x' => 'nullable|numeric',
                 'sig_y' => 'nullable|numeric',
                 'sig_page' => 'nullable|integer',
+                'positions' => 'nullable|array',
             ]);
 
             $user = auth()->user();
@@ -621,7 +643,8 @@ class PolizaController extends Controller
                     'Notificación de Vencimiento de Póliza',
                     $request->sig_x,
                     $request->sig_y,
-                    $request->sig_page
+                    $request->sig_page,
+                    $request->positions
                 );
 
                 // Reemplazar el archivo en el storage con la nueva versión firmada
@@ -716,6 +739,7 @@ class PolizaController extends Controller
             'sig_x' => 'nullable|numeric',
             'sig_y' => 'nullable|numeric',
             'sig_page' => 'nullable|integer|min:1',
+            'positions' => 'nullable|array',
         ]);
 
         $user = Auth::user();
@@ -751,7 +775,8 @@ class PolizaController extends Controller
                 motivo: 'Firma de Renovación de Póliza',
                 sigX: $request->sig_x ? floatval($request->sig_x) : null,
                 sigY: $request->sig_y ? floatval($request->sig_y) : null,
-                sigPage: $request->sig_page ? intval($request->sig_page) : null
+                sigPage: $request->sig_page ? intval($request->sig_page) : null,
+                positions: $request->positions
             );
 
             // Reemplazar el archivo original con el firmado
@@ -777,6 +802,41 @@ class PolizaController extends Controller
             return response()->json(['message' => 'Ocurrió un error al firmar el PDF criptográficamente.'], 500);
         }
     }
+    /**
+     * Sube el documento de renovación final firmado por terceros (contratista).
+     */
+    public function subirRenovacionFinal(Request $request, Poliza $poliza)
+    {
+        $request->validate([
+            'archivo_final' => 'required|file|mimes:pdf|max:10240', // Max 10MB
+        ]);
+
+        $user = Auth::user();
+        if (!$user->hasAnyRole(['Gestor de Tesorería', 'Administrador', 'Super Admin'])) {
+            return response()->json(['message' => 'No tienes permisos para subir el documento final de renovación.'], 403);
+        }
+
+        $renovacion = \App\Models\PolizaRenovacion::where('poliza_nueva_id', $poliza->id)->firstOrFail();
+
+        if (!$renovacion->archivo_renovacion || !$renovacion->estado_firma_asesor) {
+            return response()->json(['message' => 'La renovación debe estar firmada previamente por la Prefecta.'], 400);
+        }
+
+        // Eliminar el archivo actual
+        if (\Illuminate\Support\Facades\Storage::disk('public')->exists($renovacion->archivo_renovacion)) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($renovacion->archivo_renovacion);
+        }
+
+        // Subir el nuevo
+        $path = $request->file('archivo_final')->store('renovaciones', 'public');
+
+        $renovacion->update([
+            'archivo_renovacion' => $path
+        ]);
+
+        return redirect()->back()->with('success', 'Documento de renovación final actualizado exitosamente.');
+    }
+
 
     /**
      * Enviar el oficio firmado por email a la aseguradora (máximo 2 envíos)

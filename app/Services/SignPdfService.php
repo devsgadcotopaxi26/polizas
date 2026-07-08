@@ -27,7 +27,8 @@ class SignPdfService
         string $motivo = '',
         ?float $sigX = null,
         ?float $sigY = null,
-        ?int $sigPage = null
+        ?int $sigPage = null,
+        ?array $positions = null
     ): string {
         // 1. Obtener certificado
         if (!Storage::disk('local')->exists($certificadoPath)) {
@@ -102,7 +103,7 @@ class SignPdfService
         $tsaUrl     = config('app.firma_tsa_url', '');
 
         $pythonCommand = sprintf(
-            'python %s --input %s --output %s --cert %s --key %s --name %s --reason %s %s %s %s --location %s --app-version %s --app-name %s --tsa-url %s %s 2>&1',
+            'python %s --input %s --output %s --cert %s --key %s --name %s --reason %s %s %s %s --location %s --app-version %s --app-name %s --tsa-url %s %s %s 2>&1',
             escapeshellarg($pythonScriptPath),
             escapeshellarg($tempInputFile),
             escapeshellarg($tempSignedFile),
@@ -117,7 +118,8 @@ class SignPdfService
             escapeshellarg($appVersion),
             escapeshellarg($appName),
             escapeshellarg($tsaUrl),
-            $rolesArgs
+            $rolesArgs,
+            $positions !== null ? '--positions-base64 ' . escapeshellarg(base64_encode(json_encode($positions))) : ''
         );
 
         $pythonOutput = shell_exec($pythonCommand);

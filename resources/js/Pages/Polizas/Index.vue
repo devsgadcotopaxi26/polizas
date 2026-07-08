@@ -35,6 +35,10 @@ const bandeja_gestor_envio = ref(
     props.filters.bandeja_gestor_envio === "true" ||
         props.filters.bandeja_gestor_envio === true,
 );
+const bandeja_gestor_archivo = ref(
+    props.filters.bandeja_gestor_archivo === "true" ||
+        props.filters.bandeja_gestor_archivo === true,
+);
 const sort_by  = ref(props.filters.sort_by  || "created_at");
 const sort_dir = ref(props.filters.sort_dir || "desc");
 
@@ -100,6 +104,7 @@ watch(
         bandeja_tesorero,
         bandeja_prefecto,
         bandeja_gestor_envio,
+        bandeja_gestor_archivo,
         sort_by,
         sort_dir,
     ],
@@ -112,6 +117,7 @@ watch(
             valBandejaT,
             valBandejaA,
             valBandejaGE,
+            valBandejaGA,
             valSortBy,
             valSortDir,
         ]) => {
@@ -125,6 +131,7 @@ watch(
                     bandeja_tesorero: valBandejaT ? "true" : null,
                     bandeja_prefecto: valBandejaA ? "true" : null,
                     bandeja_gestor_envio: valBandejaGE ? "true" : null,
+                    bandeja_gestor_archivo: valBandejaGA ? "true" : null,
                     sort_by: valSortBy,
                     sort_dir: valSortDir,
                 },
@@ -180,7 +187,7 @@ const formatDate = (date) => {
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <a
-                        :href="route('polizas.export_excel', { search, estado, categoria, subtipo, bandeja_tesorero: bandeja_tesorero ? 'true' : null, bandeja_prefecto: bandeja_prefecto ? 'true' : null, bandeja_gestor_envio: bandeja_gestor_envio ? 'true' : null })"
+                        :href="route('polizas.export_excel', { search, estado, categoria, subtipo, bandeja_tesorero: bandeja_tesorero ? 'true' : null, bandeja_prefecto: bandeja_prefecto ? 'true' : null, bandeja_gestor_envio: bandeja_gestor_envio ? 'true' : null, bandeja_gestor_archivo: bandeja_gestor_archivo ? 'true' : null })"
                         class="inline-flex items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-emerald-700 active:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -190,7 +197,7 @@ const formatDate = (date) => {
                     </a>
                     
                     <a
-                        :href="route('polizas.export_pdf', { search, estado, categoria, subtipo, bandeja_tesorero: bandeja_tesorero ? 'true' : null, bandeja_prefecto: bandeja_prefecto ? 'true' : null, bandeja_gestor_envio: bandeja_gestor_envio ? 'true' : null })"
+                        :href="route('polizas.export_pdf', { search, estado, categoria, subtipo, bandeja_tesorero: bandeja_tesorero ? 'true' : null, bandeja_prefecto: bandeja_prefecto ? 'true' : null, bandeja_gestor_envio: bandeja_gestor_envio ? 'true' : null, bandeja_gestor_archivo: bandeja_gestor_archivo ? 'true' : null })"
                         target="_blank"
                         class="inline-flex items-center px-4 py-2 bg-rose-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-rose-700 active:bg-rose-800 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm"
                     >
@@ -287,6 +294,31 @@ const formatDate = (date) => {
                             bandeja_gestor_envio
                                 ? "Ver Todas las Pólizas"
                                 : "Oficios Listos para Enviar"
+                        }}
+                    </button>
+
+                    <!-- Bandeja Gestor Archivo -->
+                    <button
+                        v-if="
+                            $page.props.auth.user.roles &&
+                            $page.props.auth.user.roles.includes(
+                                'Gestor de Tesorería',
+                            )
+                        "
+                        @click="bandeja_gestor_archivo = !bandeja_gestor_archivo"
+                        :class="[
+                            'inline-flex items-center px-4 py-2 border rounded-xl font-bold text-xs uppercase tracking-widest transition shadow-sm',
+                            bandeja_gestor_archivo
+                                ? 'bg-emerald-700 border-transparent text-white hover:bg-emerald-800'
+                                : 'bg-white border-slate-200 text-slate-700 hover:bg-slate-50',
+                        ]"
+                    >
+                        <span v-if="bandeja_gestor_archivo" class="mr-2">🔙</span>
+                        <span v-else class="mr-2">📂</span>
+                        {{
+                            bandeja_gestor_archivo
+                                ? "Ver Todas las Pólizas"
+                                : "Renovaciones Listas para Archivo"
                         }}
                     </button>
                 </div>

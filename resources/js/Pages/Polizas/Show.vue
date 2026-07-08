@@ -1,12 +1,12 @@
 <script setup>
 import AuthenticatedLayout from "@/Layouts/AuthenticatedLayout.vue";
-import { Head, Link, useForm, router } from "@inertiajs/vue3";
+import { Head, Link, useForm, router, usePage } from "@inertiajs/vue3";
 import Modal from "@/Components/Modal.vue";
 import InputLabel from "@/Components/InputLabel.vue";
 import TextInput from "@/Components/TextInput.vue";
 import InputError from "@/Components/InputError.vue";
 import axios from "axios";
-import { ref, markRaw } from "vue";
+import { ref, markRaw, computed } from "vue";
 import * as pdfjsLib from "pdfjs-dist";
 import pdfWorker from "pdfjs-dist/build/pdf.worker.mjs?url";
 
@@ -134,8 +134,16 @@ const renderTask = ref(null);
 const sigX = ref(null);
 const sigY = ref(null);
 const sigPage = ref(null);
+const positions = ref([]);
 const pdfRenderScale = ref(1.2);
 const isLoadingPdf = ref(false);
+
+const page = usePage();
+const isPrefecto = computed(() => page.props.auth.user.roles?.includes('Prefecto/a'));
+
+const removePosition = (index) => {
+    positions.value.splice(index, 1);
+};
 
 const loadPdf = async (url) => {
     isLoadingPdf.value = true;
@@ -197,11 +205,20 @@ const handleCanvasClick = (event) => {
     const pdfX = x / pdfRenderScale.value;
     const pdfY = y / pdfRenderScale.value;
     const pdfHeight = canvas.height / pdfRenderScale.value;
+    const finalY = pdfHeight - pdfY;
 
-    sigX.value = pdfX;
-    // Invert Y for pyHanko
-    sigY.value = pdfHeight - pdfY;
-    sigPage.value = currentPageNum.value;
+    if (isPrefecto.value) {
+        positions.value.push({
+            x: pdfX,
+            y: finalY,
+            page: currentPageNum.value
+        });
+    } else {
+        sigX.value = pdfX;
+        // Invert Y for pyHanko
+        sigY.value = finalY;
+        sigPage.value = currentPageNum.value;
+    }
 };
 
 const signingContext = ref("oficio"); // 'oficio' o 'renovacion'
@@ -236,6 +253,7 @@ const closeSignModal = () => {
     sigX.value = null;
     sigY.value = null;
     sigPage.value = null;
+    positions.value = [];
     pdfDoc.value = null;
     signingContext.value = "oficio";
 };
@@ -283,12 +301,16 @@ const handleRenewalFileUpload = (e) => {
 };
 
 const submitSignature = async () => {
-    if (!signForm.password_certificado || sigX.value === null) {
-        passwordError.value =
-            sigX.value === null
-                ? "Por favor haz clic en el PDF para ubicar tu firma."
-                : "";
-        return;
+    if (isPrefecto.value) {
+        if (!signForm.password_certificado || positions.value.length === 0) {
+            passwordError.value = positions.value.length === 0 ? "Por favor haz clic en el PDF para ubicar tus firmas." : "";
+            return;
+        }
+    } else {
+        if (!signForm.password_certificado || sigX.value === null) {
+            passwordError.value = sigX.value === null ? "Por favor haz clic en el PDF para ubicar tu firma." : "";
+            return;
+        }
     }
 
     isSigning.value = true;
@@ -307,9 +329,10 @@ const submitSignature = async () => {
             postRoute,
             {
                 password_certificado: signForm.password_certificado,
-                sig_x: Math.round(sigX.value),
-                sig_y: Math.round(sigY.value),
-                sig_page: sigPage.value,
+                sig_x: isPrefecto.value ? null : Math.round(sigX.value),
+                sig_y: isPrefecto.value ? null : Math.round(sigY.value),
+                sig_page: isPrefecto.value ? null : sigPage.value,
+                positions: isPrefecto.value ? positions.value.map(p => ({ x: Math.round(p.x), y: Math.round(p.y), page: p.page })) : null,
             },
             {
                 responseType: "blob",
@@ -415,6 +438,24 @@ const ejecutarEliminarRenovacion = () => {
             },
         }
     );
+};
+
+// === SUBIR RENOVACIÓN FINAL (CONTRATISTA) ===
+const isUploadFinalModalOpen = ref(false);
+const uploadFinalForm = useForm({
+    archivo_final: null,
+});
+
+const closeUploadFinalModal = () => {
+    isUploadFinalModalOpen.value = false;
+    uploadFinalForm.reset();
+    uploadFinalForm.clearErrors();
+};
+
+const submitUploadFinal = () => {
+    uploadFinalForm.post(route('polizas.renovacion_final', props.poliza.id), {
+        onSuccess: () => closeUploadFinalModal(),
+    });
 };
 </script>
 
@@ -537,7 +578,23 @@ const ejecutarEliminarRenovacion = () => {
                         @click="openSignModal('renovacion')"
                         class="inline-flex items-center px-4 py-2 bg-emerald-700 border border-transparent rounded-xl font-bold text-xs text-white uppercase tracking-widest hover:bg-emerald-800 transition shadow-sm"
                     >
-                        🖋️ Firmar Renovación como Asesor
+                        🖋️ FIRMAR RENOVACIÓN
+                    </button>
+
+                    <!-- Botón para Gestor: Subir PDF final (Contratista) -->
+                    <button
+                        v-if="
+                            renovacion_de &&
+                            renovacion_de.estado_firma_asesor &&
+                            $page.props.auth.user.roles &&
+                            $page.props.auth.user.roles.includes(
+                                'Gestor de Tesorería',
+                            )
+                        "
+                        @click="isUploadFinalModalOpen = true"
+                        class="inline-flex items-center px-4 py-2 bg-indigo-600 border border-transparent rounded-xl font-bold text-xs text-white uppercase tracking-widest hover:bg-indigo-700 transition shadow-sm ml-2"
+                    >
+                        📤 Subir Firma Contratista
                     </button>
 
                     <!-- Botón Email: Estado 1 - Ningún aviso enviado -->
@@ -1907,9 +1964,9 @@ const ejecutarEliminarRenovacion = () => {
                             class="cursor-crosshair bg-white max-w-full lg:max-w-none transition-all"
                         ></canvas>
 
-                        <!-- Marcador Visual de la Firma -->
+                        <!-- Marcador Visual de la Firma (Gestor/Tesorero) -->
                         <div
-                            v-if="sigX !== null && sigPage === currentPageNum"
+                            v-if="!isPrefecto && sigX !== null && sigPage === currentPageNum"
                             class="absolute pointer-events-none border-2 border-red-500 bg-red-500/10 text-red-700 font-bold text-xs flex shadow-sm backdrop-blur-[1px] transform origin-bottom-left"
                             :style="{
                                 left: sigX * pdfRenderScale + 'px',
@@ -1924,6 +1981,31 @@ const ejecutarEliminarRenovacion = () => {
                                 >Tu Firma Aquí</span
                             >
                         </div>
+
+                        <!-- Marcadores Múltiples (Prefecto) -->
+                        <template v-if="isPrefecto">
+                            <div
+                                v-for="(pos, idx) in positions"
+                                :key="idx"
+                                v-show="pos.page === currentPageNum"
+                                class="absolute pointer-events-none border-2 border-emerald-500 bg-emerald-500/10 text-emerald-700 font-bold text-xs flex shadow-sm backdrop-blur-[1px] transform origin-bottom-left"
+                                :style="{
+                                    left: pos.x * pdfRenderScale + 'px',
+                                    bottom: pos.y * pdfRenderScale + 'px',
+                                    width: 180 * pdfRenderScale + 'px',
+                                    height: 80 * pdfRenderScale + 'px',
+                                    borderStyle: 'dashed',
+                                }"
+                            >
+                                <span
+                                    class="absolute top-1 left-1 bg-emerald-500 text-white px-1.5 py-0.5 rounded text-[10px] opacity-80 uppercase tracking-widest label-firma"
+                                >Firma {{ idx + 1 }}</span>
+                                <button
+                                    @click.stop="removePosition(idx)"
+                                    class="absolute -top-3 -right-3 bg-red-500 text-white rounded-full w-6 h-6 flex items-center justify-center shadow-lg pointer-events-auto hover:bg-red-600 z-50 transition-colors"
+                                >✕</button>
+                            </div>
+                        </template>
                     </div>
 
                     <!-- Paginación flotante -->
@@ -2013,7 +2095,7 @@ const ejecutarEliminarRenovacion = () => {
                             </p>
 
                             <div
-                                v-if="sigX !== null"
+                                v-if="sigX !== null || (isPrefecto && positions.length > 0)"
                                 class="mt-4 p-3 bg-emerald-50 rounded-lg border border-emerald-200 text-sm font-bold text-emerald-700 flex items-center justify-center gap-2 shadow-sm animate-pulse"
                             >
                                 <svg
@@ -2028,13 +2110,14 @@ const ejecutarEliminarRenovacion = () => {
                                         clip-rule="evenodd"
                                     />
                                 </svg>
-                                ¡Posición Registrada!
+                                <span v-if="isPrefecto">{{ positions.length }} Posición(es) Registrada(s)!</span>
+                                <span v-else>¡Posición Registrada!</span>
                             </div>
                         </div>
 
                         <div class="space-y-4 relative">
                             <div
-                                v-if="sigX === null"
+                                v-if="(isPrefecto && positions.length === 0) || (!isPrefecto && sigX === null)"
                                 class="absolute inset-0 bg-white/60 backdrop-blur-[2px] z-10 flex flex-col items-center justify-center text-center p-4"
                             >
                                 <svg
@@ -2124,7 +2207,7 @@ const ejecutarEliminarRenovacion = () => {
                             :disabled="
                                 isSigning ||
                                 !signForm.password_certificado ||
-                                sigX === null
+                                (isPrefecto ? positions.length === 0 : sigX === null)
                             "
                             class="w-full px-5 py-3 sm:py-4 bg-indigo-600 border border-transparent rounded-xl shadow-lg shadow-indigo-200 text-sm font-bold text-white hover:bg-indigo-700 disabled:opacity-50 disabled:shadow-none transition-all focus:outline-none flex items-center justify-center"
                         >
@@ -2384,6 +2467,49 @@ const ejecutarEliminarRenovacion = () => {
                     <span v-else">📤 Enviar Email</span>
                 </button>
             </div>
+        </div>
+    </Modal>
+
+    <!-- Modal para subir firma de contratista -->
+    <Modal :show="isUploadFinalModalOpen" @close="closeUploadFinalModal" maxWidth="md">
+        <div class="p-6">
+            <h2 class="text-lg font-bold text-slate-900 mb-4">Subir Documento Final (Firma Contratista)</h2>
+            <p class="text-sm text-slate-600 mb-4">
+                Sube el documento en PDF que incluye la firma de la Prefecta y del Contratista externo. Esto reemplazará el archivo actual y finalizará el proceso de la renovación.
+            </p>
+            
+            <form @submit.prevent="submitUploadFinal">
+                <div class="mb-4">
+                    <InputLabel for="archivo_final" value="Documento PDF Firmado" />
+                    <input
+                        id="archivo_final"
+                        type="file"
+                        accept="application/pdf"
+                        class="mt-1 block w-full border border-slate-300 rounded-lg p-2 text-sm text-slate-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 cursor-pointer"
+                        @change="e => uploadFinalForm.archivo_final = e.target.files[0]"
+                        required
+                    />
+                    <InputError :message="uploadFinalForm.errors.archivo_final" class="mt-2" />
+                </div>
+                
+                <div class="flex justify-end gap-3 mt-6">
+                    <button
+                        type="button"
+                        @click="closeUploadFinalModal"
+                        class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                    >
+                        Cancelar
+                    </button>
+                    <button
+                        type="submit"
+                        :disabled="uploadFinalForm.processing"
+                        class="px-4 py-2 bg-indigo-600 border border-transparent rounded-lg text-sm font-semibold text-white hover:bg-indigo-700 disabled:opacity-50 transition cursor-pointer"
+                    >
+                        <span v-if="uploadFinalForm.processing">⏳ Subiendo...</span>
+                        <span v-else>📤 Subir Final</span>
+                    </button>
+                </div>
+            </form>
         </div>
     </Modal>
 </template>
