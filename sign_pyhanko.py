@@ -126,41 +126,53 @@ def _draw_custom_stamp(output_pdf_path: str, box, signer_name: str):
     c.drawImage(ImageReader(qr_buf), qr_x, qr_y,
                 width=qr_size, height=qr_size, preserveAspectRatio=True)
 
-    # ---- Texto a la derecha: centrado verticalmente respecto al QR ----
-    text_x = qr_size + PAD * 2
+    # ---- Texto a la derecha ----
+    text_x = qr_size + PAD      # Acercar texto al QR
+    font_label = 4.8            # Tamaño letra normal
+    font_name  = 8.1            # Tamaño nombre en negrita
+    
+    gap_head  = 7.5     # Acercar nombre a "Firmado..."
+    gap_lines = 8.5     # Entre nombre y apellido
+    gap_foot  = 10.0    # Alejar "Validar..." de nombre
 
-    font_label = 7.5    # Regular
-    font_name  = 9.5    # Bold
-    lh_label   = font_label + 2.5   # interlineado etiqueta
-    lh_name    = font_name  + 2.5   # interlineado nombre
-
-    # Altura total del bloque de texto
     n_name_lines = 2 if nombres else 1
-    block_h = lh_label + (lh_name * n_name_lines) + lh_label
+    # Distancia vertical total entre baselines
+    total_baseline_dist = gap_head + gap_foot + (gap_lines if n_name_lines == 2 else 0)
+    
+    qr_center_y = PAD + qr_size / 2
+    y_cur = qr_center_y + total_baseline_dist / 2
 
-    # Centro vertical del QR → primera línea encima del centro, última debajo
-    qr_center_y = qr_y + qr_size / 2
-    y_cur = qr_center_y + block_h / 2 - font_label
+    def _draw_with_charspace(canvas_obj, x, y, text, font, size, char_space=0.0, double_pass_offset=0.0):
+        """Dibuja texto con espaciado entre caracteres usando PDFTextObject."""
+        t = canvas_obj.beginText(x, y)
+        t.setFont(font, size)
+        t.setCharSpace(char_space)
+        t.textOut(text)
+        canvas_obj.drawText(t)
+        if double_pass_offset > 0:
+            # Segunda pasada desplazada para dar más peso/bold
+            t2 = canvas_obj.beginText(x + double_pass_offset, y)
+            t2.setFont(font, size)
+            t2.setCharSpace(char_space)
+            t2.textOut(text)
+            canvas_obj.drawText(t2)
 
     c.setFillColor(colors.black)
+    # Doble pasada sutil (0.15) a letras normales para imitar el "peso" que tiene en FirmaEC
+    _draw_with_charspace(c, text_x, y_cur, "Firmado electrónicamente por:", FONT_REG, font_label, double_pass_offset=0.15)
 
-    # Línea 1 – pie (ahora arriba) — fuente ligeramente menor para que quepa completo
-    c.setFont(FONT_REG, 7.0)
-    c.drawString(text_x, y_cur, "Validar únicamente en FirmaEC.")
+    y_cur -= gap_head
+    # Nombres con charspace ligero y pasada fuerte (0.3)
+    _draw_with_charspace(c, text_x, y_cur, apellidos, FONT_BOLD, font_name,
+                         char_space=0.3, double_pass_offset=0.3)
 
-    # Línea 2 – etiqueta
-    y_cur -= lh_label
-    c.drawString(text_x, y_cur, "Firmado electrónicamente por:")
-
-    # Línea 3 – apellidos
-    y_cur -= lh_name
-    c.setFont(FONT_BOLD, font_name)
-    c.drawString(text_x, y_cur, apellidos)
-
-    # Línea 4 – nombres (si existen)
     if nombres:
-        y_cur -= lh_name
-        c.drawString(text_x, y_cur, nombres)
+        y_cur -= gap_lines
+        _draw_with_charspace(c, text_x, y_cur, nombres, FONT_BOLD, font_name,
+                             char_space=0.3, double_pass_offset=0.3)
+
+    y_cur -= gap_foot
+    _draw_with_charspace(c, text_x, y_cur, "Validar únicamente en FirmaEC.", FONT_REG, font_label, double_pass_offset=0.15)
 
     c.save()
 
