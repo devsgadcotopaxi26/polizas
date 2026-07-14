@@ -119,15 +119,19 @@ def _draw_custom_stamp(output_pdf_path: str, box, signer_name: str):
 
     # ---- QR a la izquierda ----
     PAD = 3
-    qr_size = stamp_h - PAD * 2
-    qr_x = PAD
-    qr_y = PAD
+    qr_box_size = stamp_h - PAD * 2
+    qr_size = qr_box_size * 0.7  # 30% más pequeño
+    
+    text_x = qr_box_size + PAD  # Posición X del texto
+    
+    # Alinear el QR a la derecha para que esté más cerca del texto
+    qr_x = text_x - qr_size - 4  # Margen de 4 puntos de separación entre el QR y el texto
+    qr_y = (stamp_h - qr_size) / 2
     qr_buf.seek(0)
     c.drawImage(ImageReader(qr_buf), qr_x, qr_y,
                 width=qr_size, height=qr_size, preserveAspectRatio=True)
 
     # ---- Texto a la derecha ----
-    text_x = qr_size + PAD      # Acercar texto al QR
     font_label = 4.8            # Tamaño letra normal
     font_name  = 8.1            # Tamaño nombre en negrita
     
@@ -139,7 +143,7 @@ def _draw_custom_stamp(output_pdf_path: str, box, signer_name: str):
     # Distancia vertical total entre baselines
     total_baseline_dist = gap_head + gap_foot + (gap_lines if n_name_lines == 2 else 0)
     
-    qr_center_y = PAD + qr_size / 2
+    qr_center_y = stamp_h / 2
     y_cur = qr_center_y + total_baseline_dist / 2
 
     def _draw_with_charspace(canvas_obj, x, y, text, font, size, char_space=0.0, double_pass_offset=0.0):
@@ -247,13 +251,15 @@ def sign_pdf(input_pdf, output_pdf, name, p12_path=None, password=None, cert_pat
             reader = PdfFileReader(doc, strict=False)
             writer = IncrementalPdfFileWriter(doc, strict=False)
 
+            import uuid
+            uid = uuid.uuid4().hex[:8]
             existing = len(reader.embedded_signatures)
             if is_tesorero:
-                sig_field_name = f"Signature_Tesoreria_{existing + 1}"
+                sig_field_name = f"Signature_Tesoreria_{existing + 1}_{uid}"
             elif is_gestor:
-                sig_field_name = f"Signature_Gestor_{existing + 1}"
+                sig_field_name = f"Signature_Gestor_{existing + 1}_{uid}"
             else:
-                sig_field_name = f"Signature{existing + 1}"
+                sig_field_name = f"Signature_{existing + 1}_{uid}"
 
             # Metadata y Versión (Prop_Build)
             # Adobe muestra: "La firma se creó con la versión {app_version} ({app_name})"
