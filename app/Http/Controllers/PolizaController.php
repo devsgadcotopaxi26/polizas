@@ -686,8 +686,11 @@ class PolizaController extends Controller
      */
     public function regenerarOficio(Poliza $poliza)
     {
+        // 1. Si ya tiene firmas, la Gestora está forzando la regeneración. Resetear todo.
         if ($poliza->oficio_firmado_gestor || $poliza->oficio_firmado_tesorero) {
-            return redirect()->back()->with('error', 'No se puede regenerar el oficio porque ya tiene firmas. Cancela o reversa las firmas si es absolutamente necesario.');
+            $poliza->oficio_firmado_gestor = false;
+            $poliza->oficio_firmado_tesorero = false;
+            $poliza->save();
         }
 
         if (!$poliza->oficio_path || !$poliza->oficio_id) {

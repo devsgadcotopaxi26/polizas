@@ -63,6 +63,16 @@ class ConfiguracionController extends Controller
 
         $diasAnticipacion = (int) Configuracion::getValor('dias_anticipacion_oficio', 8);
 
+        $firmantesOficio = [
+            'gestor_nombre' => Configuracion::getValor('oficio_gestor_nombre', 'Tlga. Mariela Quingaluisa'),
+            'gestor_cargo' => Configuracion::getValor('oficio_gestor_cargo', 'GESTOR DE TESORERÍA'),
+            'gestor_email' => Configuracion::getValor('oficio_gestor_email', 'mariela.quingaluisa@cotopaxi.gob.ec'),
+            'tesorero_nombre' => Configuracion::getValor('oficio_tesorero_nombre', 'Lic. Mentor Córdova Naranjo'),
+            'tesorero_cargo' => Configuracion::getValor('oficio_tesorero_cargo', 'TESORERO'),
+            'tesorero_email' => Configuracion::getValor('oficio_tesorero_email', 'mentor.cordova@cotopaxi.gob.ec'),
+            'copia_email' => Configuracion::getValor('oficio_copia_email', 'paulina.lopez@cotopaxi.gob.ec'),
+        ];
+
         return Inertia::render('Configuraciones/Index', [
             'siguienteMinimoConfigurado' => $configMin,
             'ultimoOficioGenerado' => $maxDb,
@@ -71,6 +81,7 @@ class ConfiguracionController extends Controller
             'secuenciasPolizas' => $secuenciasPolizas,
             'mailConfig' => $mailConfig,
             'diasAnticipacion' => $diasAnticipacion,
+            'firmantesOficio' => $firmantesOficio,
         ]);
     }
 
@@ -191,5 +202,31 @@ class ConfiguracionController extends Controller
         }
 
         return back()->with('message', 'Configuración de correo (SMTP) actualizada correctamente.');
+    }
+
+    /**
+     * Guarda los datos de los firmantes y subrogaciones para oficios de renovación
+     */
+    public function guardarFirmantesOficio(Request $request)
+    {
+        $request->validate([
+            'gestor_nombre' => 'required|string|max:255',
+            'gestor_cargo' => 'required|string|max:255',
+            'gestor_email' => 'required|email|max:255',
+            'tesorero_nombre' => 'required|string|max:255',
+            'tesorero_cargo' => 'required|string|max:255',
+            'tesorero_email' => 'required|email|max:255',
+            'copia_email' => 'nullable|email|max:255',
+        ]);
+
+        Configuracion::setValor('oficio_gestor_nombre', trim($request->gestor_nombre));
+        Configuracion::setValor('oficio_gestor_cargo', trim($request->gestor_cargo));
+        Configuracion::setValor('oficio_gestor_email', trim($request->gestor_email));
+        Configuracion::setValor('oficio_tesorero_nombre', trim($request->tesorero_nombre));
+        Configuracion::setValor('oficio_tesorero_cargo', trim($request->tesorero_cargo));
+        Configuracion::setValor('oficio_tesorero_email', trim($request->tesorero_email));
+        Configuracion::setValor('oficio_copia_email', trim($request->copia_email ?? ''));
+
+        return back()->with('message', 'Firmantes para oficios de renovación actualizados correctamente.');
     }
 }

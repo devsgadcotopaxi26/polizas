@@ -27,6 +27,25 @@ const handleGenerateClick = () => {
     }
 };
 
+const isRegenerateModalOpen = ref(false);
+const hasSignaturesToRegenerate = ref(false);
+
+const handleRegenerarOficio = () => {
+    hasSignaturesToRegenerate.value = props.poliza.oficio_firmado_gestor || props.poliza.oficio_firmado_tesorero;
+    isRegenerateModalOpen.value = true;
+};
+
+const closeRegenerateModal = () => {
+    isRegenerateModalOpen.value = false;
+};
+
+const confirmRegenerarOficio = () => {
+    isRegenerateModalOpen.value = false;
+    router.post(route('polizas.regenerar_oficio', props.poliza.id), {}, {
+        preserveScroll: true
+    });
+};
+
 const openContractModal = () => {
     isContractModalOpen.value = true;
 };
@@ -137,9 +156,15 @@ const sigPage = ref(null);
 const positions = ref([]);
 const pdfRenderScale = ref(1.2);
 const isLoadingPdf = ref(false);
+const pdfViewport = ref(null);
 
 const page = usePage();
 const isPrefecto = computed(() => page.props.auth.user.roles?.includes('Prefecto/a'));
+
+const sigLeftPercent = ref(null);
+const sigBottomPercent = ref(null);
+const sigWidthPercent = ref(null);
+const sigHeightPercent = ref(null);
 
 const removePosition = (index) => {
     positions.value.splice(index, 1);
@@ -164,6 +189,7 @@ const renderPage = async (num) => {
     if (!pdfDoc.value) return;
     const page = await pdfDoc.value.getPage(num);
     const viewport = page.getViewport({ scale: pdfRenderScale.value });
+    pdfViewport.value = viewport;
     const canvas = pdfCanvas.value;
     if (!canvas) return;
 
@@ -195,29 +221,47 @@ const nextPage = () => {
 
 const handleCanvasClick = (event) => {
     const canvas = pdfCanvas.value;
+    const viewport = pdfViewport.value;
+    if (!canvas || !viewport) return;
+    
     const rect = canvas.getBoundingClientRect();
     const x = event.clientX - rect.left;
     const y = event.clientY - rect.top;
 
-    // Convert pixels to PDF points (1 pt = 1/72 inch, viewport adjusts them)
-    // pyHanko takes origin at bottom-left, so Y needs to be inverted from PDF height points
-    // First convert to PDF points:
-    const pdfX = x / pdfRenderScale.value;
-    const pdfY = y / pdfRenderScale.value;
-    const pdfHeight = canvas.height / pdfRenderScale.value;
-    const finalY = pdfHeight - pdfY;
+    // Convert CSS pixels to Canvas internal pixels (handles max-w-full scaling)
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    const internalX = x * scaleX;
+    const internalY = y * scaleY;
+
+    // Convert to absolute PDF points (handles rotation and MediaBox offset)
+    const [pdfX, pdfY] = viewport.convertToPdfPoint(internalX, internalY);
+
+    // Calculate percentages for responsive CSS rendering (box extends UP and RIGHT from click)
+    const leftPercent = (internalX / canvas.width) * 100;
+    const bottomPercent = ((canvas.height - internalY) / canvas.height) * 100;
+    const widthPercent = (180 * pdfRenderScale.value / canvas.width) * 100;
+    const heightPercent = (80 * pdfRenderScale.value / canvas.height) * 100;
 
     if (isPrefecto.value) {
         positions.value.push({
             x: pdfX,
-            y: finalY,
-            page: currentPageNum.value
+            y: pdfY,
+            page: currentPageNum.value,
+            leftPercent,
+            bottomPercent,
+            widthPercent,
+            heightPercent
         });
     } else {
         sigX.value = pdfX;
-        // Invert Y for pyHanko
-        sigY.value = finalY;
+        sigY.value = pdfY;
         sigPage.value = currentPageNum.value;
+        sigLeftPercent.value = leftPercent;
+        sigBottomPercent.value = bottomPercent;
+        sigWidthPercent.value = widthPercent;
+        sigHeightPercent.value = heightPercent;
     }
 };
 
@@ -253,6 +297,10 @@ const closeSignModal = () => {
     sigX.value = null;
     sigY.value = null;
     sigPage.value = null;
+    sigLeftPercent.value = null;
+    sigBottomPercent.value = null;
+    sigWidthPercent.value = null;
+    sigHeightPercent.value = null;
     positions.value = [];
     pdfDoc.value = null;
     signingContext.value = "oficio";
@@ -514,26 +562,21 @@ const submitUploadFinal = () => {
                         }}
                     </a>
 
-                    <!-- Botón para Regenerar Oficio Base con información corregida (Solo Gestora, sin firmas) -->
-                    <Link
+                    <!-- Botón para Regenerar Oficio Base con información corregida (Permite a la Gestora regenerar incluso si hay firmas, borrando las firmas) -->
+                    <button
                         v-if="
                             poliza.oficio_path &&
-                            !poliza.oficio_firmado_gestor &&
-                            !poliza.oficio_firmado_tesorero &&
                             !(
                                 $page.props.auth.user.roles &&
                                 ($page.props.auth.user.roles.includes('Prefecto/a') ||
                                  $page.props.auth.user.roles.includes('Gestor Tesorería Ambiente'))
                             )
                         "
-                        :href="route('polizas.regenerar_oficio', poliza.id)"
-                        method="post"
-                        as="button"
+                        @click="handleRegenerarOficio"
                         class="inline-flex items-center px-4 py-2 bg-amber-500 border border-transparent rounded-xl font-bold text-xs text-white uppercase tracking-widest hover:bg-amber-600 transition shadow-sm"
-                        preserve-scroll
                     >
                         🔄 Regenerar Corregido
-                    </Link>
+                    </button>
 
                     <!-- Botones Condicionales de Firma basados en Rol -->
                     <button
@@ -1967,12 +2010,12 @@ const submitUploadFinal = () => {
                         <!-- Marcador Visual de la Firma (Gestor/Tesorero) -->
                         <div
                             v-if="!isPrefecto && sigX !== null && sigPage === currentPageNum"
-                            class="absolute pointer-events-none border-2 border-red-500 bg-red-500/10 text-red-700 font-bold text-xs flex shadow-sm backdrop-blur-[1px] transform origin-bottom-left"
+                            class="absolute pointer-events-none border-2 border-red-500 bg-red-500/10 text-red-700 font-bold text-xs flex shadow-sm backdrop-blur-[1px]"
                             :style="{
-                                left: sigX * pdfRenderScale + 'px',
-                                bottom: sigY * pdfRenderScale + 'px',
-                                width: 180 * pdfRenderScale + 'px',
-                                height: 80 * pdfRenderScale + 'px',
+                                left: sigLeftPercent + '%',
+                                bottom: sigBottomPercent + '%',
+                                width: sigWidthPercent + '%',
+                                height: sigHeightPercent + '%',
                                 borderStyle: 'dashed',
                             }"
                         >
@@ -1988,12 +2031,12 @@ const submitUploadFinal = () => {
                                 v-for="(pos, idx) in positions"
                                 :key="idx"
                                 v-show="pos.page === currentPageNum"
-                                class="absolute pointer-events-none border-2 border-emerald-500 bg-emerald-500/10 text-emerald-700 font-bold text-xs flex shadow-sm backdrop-blur-[1px] transform origin-bottom-left"
+                                class="absolute pointer-events-none border-2 border-emerald-500 bg-emerald-500/10 text-emerald-700 font-bold text-xs flex shadow-sm backdrop-blur-[1px]"
                                 :style="{
-                                    left: pos.x * pdfRenderScale + 'px',
-                                    bottom: pos.y * pdfRenderScale + 'px',
-                                    width: 180 * pdfRenderScale + 'px',
-                                    height: 80 * pdfRenderScale + 'px',
+                                    left: pos.leftPercent + '%',
+                                    bottom: pos.bottomPercent + '%',
+                                    width: pos.widthPercent + '%',
+                                    height: pos.heightPercent + '%',
                                     borderStyle: 'dashed',
                                 }"
                             >
@@ -2510,6 +2553,55 @@ const submitUploadFinal = () => {
                     </button>
                 </div>
             </form>
+        </div>
+    </Modal>
+
+    <!-- Modal para Confirmar Regeneración de Oficio -->
+    <Modal :show="isRegenerateModalOpen" @close="closeRegenerateModal" maxWidth="md">
+        <div class="p-6">
+            <div class="flex items-center gap-4 mb-4">
+                <div 
+                    class="flex-shrink-0 w-12 h-12 rounded-full flex items-center justify-center"
+                    :class="hasSignaturesToRegenerate ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-600'"
+                >
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path v-if="hasSignaturesToRegenerate" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                        <path v-else stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                </div>
+                <h3 class="text-lg font-bold text-slate-800">
+                    {{ hasSignaturesToRegenerate ? '¡Advertencia Crítica!' : 'Regenerar Oficio' }}
+                </h3>
+            </div>
+            
+            <p v-if="hasSignaturesToRegenerate" class="text-sm text-slate-600 mb-6 leading-relaxed">
+                Este oficio ya contiene <strong>firmas digitales plasmadas</strong>. Al regenerarlo, se 
+                <span class="text-red-600 font-bold">eliminarán todas las firmas actuales</span> (Gestor/Tesorero) 
+                y el proceso de firma deberá reiniciar desde cero.<br><br>
+                ¿Está absolutamente seguro de que desea continuar?
+            </p>
+            <p v-else class="text-sm text-slate-600 mb-6 leading-relaxed">
+                ¿Está seguro de regenerar el oficio con la información actual de la base de datos? 
+                Esto actualizará el documento base.
+            </p>
+            
+            <div class="flex justify-end gap-3">
+                <button
+                    type="button"
+                    @click="closeRegenerateModal"
+                    class="px-4 py-2 bg-white border border-slate-300 rounded-lg text-sm font-semibold text-slate-700 hover:bg-slate-50 transition cursor-pointer"
+                >
+                    Cancelar
+                </button>
+                <button
+                    type="button"
+                    @click="confirmRegenerarOficio"
+                    :class="hasSignaturesToRegenerate ? 'bg-red-600 hover:bg-red-700' : 'bg-amber-500 hover:bg-amber-600'"
+                    class="px-4 py-2 border border-transparent rounded-lg text-sm font-semibold text-white transition cursor-pointer shadow-sm"
+                >
+                    Sí, regenerar oficio
+                </button>
+            </div>
         </div>
     </Modal>
 </template>

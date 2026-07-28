@@ -72,6 +72,7 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
         Route::post('/configuracion/polizas', [\App\Http\Controllers\ConfiguracionController::class, 'guardarSecuenciaPolizas'])->name('configuracion.polizas');
         Route::post('/configuracion/correo', [\App\Http\Controllers\ConfiguracionController::class, 'guardarConfiguracionCorreo'])->name('configuracion.correo');
         Route::post('/configuracion/dias-anticipacion', [\App\Http\Controllers\ConfiguracionController::class, 'guardarDiasAnticipacion'])->name('configuracion.dias_anticipacion');
+        Route::post('/configuracion/firmantes-oficio', [\App\Http\Controllers\ConfiguracionController::class, 'guardarFirmantesOficio'])->name('configuracion.firmantes_oficio');
     });
 });
 
