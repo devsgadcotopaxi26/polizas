@@ -357,9 +357,8 @@ const formatDate = (date) => {
                     <div
                         class="flex flex-wrap items-center gap-3 w-full md:w-auto"
                     >
-                        <!-- Filtro Categoria: oculto para Gestor Ambiental (siempre filtra por ambiental en el backend) -->
+                        <!-- Filtro Categoria: visible para todos, con 'ambiental' seleccionado por defecto si es Gestor Ambiental -->
                         <select
-                            v-if="!esGestorAmbiental"
                             v-model="categoria"
                             class="block w-full md:w-44 pl-3 pr-10 py-2 text-base border-slate-200 focus:outline-none focus:ring-[#024283] focus:border-[#024283] sm:text-sm rounded-xl transition duration-150 ease-in-out shadow-sm bg-white"
                         >
@@ -369,14 +368,8 @@ const formatDate = (date) => {
                             <option value="proveedores">Proveedores</option>
                         </select>
 
-                        <!-- Badge fijo de categoria para Gestor Ambiental -->
-                        <span v-if="esGestorAmbiental" class="inline-flex items-center px-3 py-2 rounded-xl text-sm font-semibold bg-green-50 text-green-800 border border-green-200">
-                            🌿 Ambiental
-                        </span>
-
-                        <!-- Filtro Subtipo: oculto para Gestor Ambiental (solo tienen fiel_cumplimiento_ambiental) -->
+                        <!-- Filtro Subtipo -->
                         <select
-                            v-if="!esGestorAmbiental"
                             v-model="subtipo"
                             class="block w-full md:w-52 pl-3 pr-10 py-2 text-base border-slate-200 focus:outline-none focus:ring-[#024283] focus:border-[#024283] sm:text-sm rounded-xl transition duration-150 ease-in-out shadow-sm bg-white"
                         >
@@ -390,7 +383,7 @@ const formatDate = (date) => {
                             </option>
                         </select>
 
-                        <!-- Filtro Estado: siempre visible, pero restringido para Gestor Ambiental -->
+                        <!-- Filtro Estado -->
                         <select
                             v-model="estado"
                             class="block w-full md:w-48 pl-3 pr-10 py-2 text-base border-slate-200 focus:outline-none focus:ring-[#024283] focus:border-[#024283] sm:text-sm rounded-xl transition duration-150 ease-in-out shadow-sm bg-white"
@@ -398,16 +391,11 @@ const formatDate = (date) => {
                             <option value="">Todos los estados</option>
                             <option value="vigente">Vigente</option>
                             <option value="vencida">Vencida</option>
-                            <!-- Las siguientes opciones no aplican a pólizas ambientales -->
-                            <option v-if="!esGestorAmbiental" value="acta_provisional">
-                                Acta Provisional
-                            </option>
-                            <option v-if="!esGestorAmbiental" value="acta_definitiva">
-                                Acta Definitiva
-                            </option>
-                            <option v-if="!esGestorAmbiental" value="liquidada">Liquidada</option>
-                            <option v-if="!esGestorAmbiental" value="original">Original</option>
-                            <option v-if="!esGestorAmbiental" value="renovada">Renovada</option>
+                            <option value="acta_provisional">Acta Provisional</option>
+                            <option value="acta_definitiva">Acta Definitiva</option>
+                            <option value="liquidada">Liquidada</option>
+                            <option value="original">Original</option>
+                            <option value="renovada">Renovada</option>
                         </select>
                     </div>
                 </div>
@@ -437,7 +425,7 @@ const formatDate = (date) => {
                                         scope="col"
                                         class="px-6 py-4 text-left text-xs font-bold text-slate-500 uppercase tracking-wider"
                                     >
-                                        {{ esGestorAmbiental ? 'Operador Ambiental' : 'Contratista' }}
+                                        Contratista / Operador
                                     </th>
                                     <th
                                         scope="col"
@@ -525,7 +513,7 @@ const formatDate = (date) => {
                                             <div
                                                 class="flex-shrink-0 h-8 w-8 rounded-full bg-slate-100 flex items-center justify-center text-[#024283] font-bold text-xs uppercase"
                                             >
-                                                <template v-if="esGestorAmbiental">
+                                                <template v-if="poliza.categoria_poliza === 'ambiental'">
                                                     {{
                                                         poliza.operador_ambiental?.nombre?.charAt(0) || "—"
                                                     }}
@@ -540,7 +528,7 @@ const formatDate = (date) => {
                                                 <div
                                                     class="text-sm font-medium text-slate-900"
                                                 >
-                                                    <template v-if="esGestorAmbiental">
+                                                    <template v-if="poliza.categoria_poliza === 'ambiental'">
                                                         {{
                                                             poliza.operador_ambiental?.nombre || "Sin operador"
                                                         }}
@@ -552,7 +540,7 @@ const formatDate = (date) => {
                                                     </template>
                                                 </div>
                                                 <div
-                                                    v-if="!esGestorAmbiental && poliza.contrato"
+                                                    v-if="poliza.categoria_poliza !== 'ambiental' && poliza.contrato"
                                                     class="text-xs text-slate-500"
                                                 >
                                                     {{
@@ -560,7 +548,7 @@ const formatDate = (date) => {
                                                     }}
                                                 </div>
                                                 <div
-                                                    v-if="esGestorAmbiental && poliza.operador_ambiental"
+                                                    v-if="poliza.categoria_poliza === 'ambiental' && poliza.operador_ambiental"
                                                     class="text-xs text-slate-500"
                                                 >
                                                     {{

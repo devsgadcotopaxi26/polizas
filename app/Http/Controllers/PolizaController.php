@@ -22,9 +22,9 @@ class PolizaController extends Controller
     {
         $query = Poliza::with(['sucursal.aseguradora', 'sucursal.ciudad', 'usuario', 'contrato.contratista', 'operadorAmbiental', 'renovacionDe']);
 
-        // El rol Gestor Tesorería Ambiente solo puede ver pólizas ambientales
-        if (Auth::user()->hasRole('Gestor Tesorería Ambiente')) {
-            $query->where('categoria_poliza', 'ambiental');
+        // Por defecto, al cargar por primera vez para el rol Gestor Tesorería Ambiente, filtramos por 'ambiental' si no ha especificado una categoría en el filtro
+        if (Auth::user()->hasRole('Gestor Tesorería Ambiente') && !$request->has('categoria')) {
+            $request->merge(['categoria' => 'ambiental']);
         }
 
         // Filtros
@@ -112,9 +112,8 @@ class PolizaController extends Controller
     {
         $query = Poliza::with(['sucursal.aseguradora', 'sucursal.ciudad', 'usuario', 'contrato.contratista', 'operadorAmbiental']);
 
-        // El rol Gestor Tesorería Ambiente solo puede ver pólizas ambientales
-        if (Auth::user()->hasRole('Gestor Tesorería Ambiente')) {
-            $query->where('categoria_poliza', 'ambiental');
+        if (Auth::user()->hasRole('Gestor Tesorería Ambiente') && !$request->has('categoria')) {
+            $request->merge(['categoria' => 'ambiental']);
         }
 
         if ($request->has('search')) {
