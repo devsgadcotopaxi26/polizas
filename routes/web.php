@@ -12,7 +12,7 @@ Route::get('/', function () {
 use App\Http\Controllers\DashboardController;
 
 Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified'])->name('dashboard');
+    ->middleware(['auth', 'verified', 'must.change.password'])->name('dashboard');
 
 use App\Http\Controllers\PolizaController;
 use App\Http\Controllers\AseguradoraController;
@@ -62,6 +62,8 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
     // Módulo de Usuarios (Solo Administrador / Super Admin)
     Route::middleware(['role:Administrador|Super Admin'])->group(function () {
         Route::resource('users', UserController::class);
+        Route::patch('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle_status');
+        Route::patch('users/{user}/toggle-password-change', [UserController::class, 'togglePasswordChange'])->name('users.toggle_password_change');
 
         // Auditoría Global
         Route::get('/auditoria', [\App\Http\Controllers\AuditoriaController::class, 'index'])->name('auditoria.index');

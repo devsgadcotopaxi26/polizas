@@ -49,6 +49,14 @@ class LoginRequest extends FormRequest
             ]);
         }
 
+        if (! Auth::user()->is_active) {
+            Auth::logout();
+
+            throw ValidationException::withMessages([
+                'email' => 'Tu usuario se encuentra temporalmente inactivo o subrogado en este momento. Comunícate con el Administrador.',
+            ]);
+        }
+
         RateLimiter::clear($this->throttleKey());
     }
 

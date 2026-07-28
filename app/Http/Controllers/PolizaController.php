@@ -101,7 +101,7 @@ class PolizaController extends Controller
             'polizas' => $polizas,
             'filters' => $request->only(['search', 'estado', 'categoria', 'subtipo', 'bandeja_tesorero', 'bandeja_prefecto', 'bandeja_gestor_envio', 'bandeja_gestor_archivo', 'sort_by', 'sort_dir']),
             'esGestorAmbiental' => Auth::user()->hasRole('Gestor Tesorería Ambiente'),
-            'esPrefecto' => Auth::user()->hasRole('Prefecto/a'),
+            'esPrefecto' => Auth::user()->hasAnyRole(['Prefecto/a', 'Prefecto/a Subrogante']),
         ]);
     }
 
@@ -349,7 +349,7 @@ class PolizaController extends Controller
      */
     public function edit(Poliza $poliza)
     {
-        if (Auth::user()->hasRole('Prefecto/a')) {
+        if (Auth::user()->hasAnyRole(['Prefecto/a', 'Prefecto/a Subrogante'])) {
             return redirect()->route('polizas.show', $poliza->id)
                 ->with('error', 'No tienes permisos para editar pólizas.');
         }
@@ -375,7 +375,7 @@ class PolizaController extends Controller
      */
     public function update(Request $request, Poliza $poliza)
     {
-        if (Auth::user()->hasRole('Prefecto/a')) {
+        if (Auth::user()->hasAnyRole(['Prefecto/a', 'Prefecto/a Subrogante'])) {
             return response()->json(['message' => 'No tienes permisos para editar pólizas.'], 403);
         }
 
@@ -625,6 +625,13 @@ class PolizaController extends Controller
 
             $user = auth()->user();
 
+            if (!$user->is_active) {
+                if ($request->wantsJson() || $request->ajax()) {
+                    return response()->json(['message' => 'Tu usuario se encuentra temporalmente inactivo o subrogado.'], 403);
+                }
+                return back()->with('error', 'Tu usuario se encuentra temporalmente inactivo o subrogado.');
+            }
+
             if (!$user->certificado_path) {
                 if ($request->wantsJson() || $request->ajax()) {
                     return response()->json(['message' => 'No tienes un certificado configurado. Súbelo en tu perfil primero.'], 422);
@@ -652,10 +659,10 @@ class PolizaController extends Controller
 
                 // Actualizar banderines en la base de datos
                 $roles = $user->getRoleNames();
-                if ($roles->contains('Gestor de Tesorería')) {
+                if ($roles->contains('Gestor de Tesorería') || $roles->contains('Gestor de Tesorería Subrogante')) {
                     $poliza->oficio_firmado_gestor = true;
                 }
-                if ($roles->contains('Tesorero')) {
+                if ($roles->contains('Tesorero') || $roles->contains('Tesorero Subrogante')) {
                     $poliza->oficio_firmado_tesorero = true;
                 }
                 $poliza->save();
@@ -746,7 +753,10 @@ class PolizaController extends Controller
         ]);
 
         $user = Auth::user();
-        if (!$user->hasAnyRole(['Prefecto/a', 'Administrador', 'Super Admin'])) {
+        if (!$user->is_active) {
+            return response()->json(['message' => 'Tu usuario se encuentra temporalmente inactivo o subrogado.'], 403);
+        }
+        if (!$user->hasAnyRole(['Prefecto/a', 'Prefecto/a Subrogante', 'Administrador', 'Super Admin'])) {
             return response()->json(['message' => 'No tienes permisos para firmar renovaciones.'], 403);
         }
 

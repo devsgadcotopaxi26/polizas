@@ -101,5 +101,33 @@ class RoleSeeder extends Seeder
             'ver-dashboard',
             'ver-aseguradoras',
         ]);
+
+        // Tesorero y Tesorero Subrogante
+        foreach (['Tesorero', 'Tesorero Subrogante'] as $roleName) {
+            $role = Role::firstOrCreate(['name' => $roleName]);
+            $role->givePermissionTo([
+                'ver-polizas',
+                'ver-dashboard',
+            ]);
+        }
+
+        // Gestor de Tesorería y Gestor de Tesorería Subrogante
+        foreach (['Gestor de Tesorería', 'Gestor de Tesorería Subrogante'] as $roleName) {
+            $role = Role::firstOrCreate(['name' => $roleName]);
+            $role->givePermissionTo([
+                'ver-polizas',
+                'crear-polizas',
+                'editar-polizas',
+                'ver-dashboard',
+                'ver-aseguradoras',
+            ]);
+        }
+
+        // Prefecto/a Subrogante
+        $prefectoSub = Role::firstOrCreate(['name' => 'Prefecto/a Subrogante']);
+        $prefectoSub->givePermissionTo([
+            'ver-polizas',
+            'ver-dashboard',
+        ]);
     }
 }
