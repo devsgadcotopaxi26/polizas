@@ -50,7 +50,8 @@ class UserController extends Controller
             'name' => $request->name,
             'email' => $request->email,
             'password' => Hash::make($request->password),
-            'must_change_password' => true,
+            'must_change_password' => $request->has('must_change_password') ? $request->boolean('must_change_password') : true,
+            'is_active' => $request->has('is_active') ? $request->boolean('is_active') : true,
         ]);
 
         $user->assignRole($request->role);
@@ -95,6 +96,12 @@ class UserController extends Controller
 
         $user->name = $request->name;
         $user->email = $request->email;
+        if ($request->has('is_active')) {
+            $user->is_active = $request->boolean('is_active');
+        }
+        if ($request->has('must_change_password')) {
+            $user->must_change_password = $request->boolean('must_change_password');
+        }
 
         if ($request->filled('password')) {
             $user->password = Hash::make($request->password);
@@ -104,6 +111,37 @@ class UserController extends Controller
         $user->syncRoles([$request->role]);
 
         return redirect()->route('users.index')->with('success', 'Usuario actualizado exitosamente.');
+    }
+
+    /**
+     * Alternar estado activo / inactivo de una cuenta (subrogaciones/vacaciones)
+     */
+    public function toggleStatus(User $user)
+    {
+        if ($user->id === auth()->id()) {
+            return back()->with('error', 'No puedes inactivar tu propia cuenta.');
+        }
+
+        $user->is_active = !$user->is_active;
+        $user->save();
+
+        $estado = $user->is_active ? 'activado (puede firmar e ingresar)' : 'inactivado (vacaciones/subrogado)';
+        return back()->with('success', "El usuario {$user->name} ha sido {$estado}.");
+    }
+
+    /**
+     * Alternar la exigencia de cambio de contraseña en el próximo inicio de sesión
+     */
+    public function togglePasswordChange(User $user)
+    {
+        $user->must_change_password = !$user->must_change_password;
+        $user->save();
+
+        $estado = $user->must_change_password
+            ? 'se le ha exigido cambiar su contraseña en el próximo inicio de sesión'
+            : 'ya no se le exige cambio obligatorio de contraseña';
+
+        return back()->with('success', "Al usuario {$user->name} {$estado}.");
     }
 
     /**

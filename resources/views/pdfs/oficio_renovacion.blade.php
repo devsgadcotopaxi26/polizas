@@ -312,17 +312,29 @@
         </tbody>
     </table>
 
+    @php
+        $gestorNombre = \App\Models\Configuracion::getValor('oficio_gestor_nombre', 'Tlga. Mariela Quingaluisa');
+        $gestorCargo = strtoupper(\App\Models\Configuracion::getValor('oficio_gestor_cargo', 'GESTOR DE TESORERÍA'));
+        $gestorEmail = \App\Models\Configuracion::getValor('oficio_gestor_email', 'mariela.quingaluisa@cotopaxi.gob.ec');
+
+        $tesoreroNombre = \App\Models\Configuracion::getValor('oficio_tesorero_nombre', 'Lic. Mentor Córdova Naranjo');
+        $tesoreroCargo = strtoupper(\App\Models\Configuracion::getValor('oficio_tesorero_cargo', 'TESORERO'));
+        $tesoreroEmail = \App\Models\Configuracion::getValor('oficio_tesorero_email', 'mentor.cordova@cotopaxi.gob.ec');
+
+        $copiaEmail = \App\Models\Configuracion::getValor('oficio_copia_email', 'paulina.lopez@cotopaxi.gob.ec');
+    @endphp
+
     <!-- PÁRRAFO FINAL -->
     <div class="parrafo-final">
         <p>
             Agradezco a ustedes una vez realizada la RENOVACIÓN se remita la Póliza de Seguro de Fianzas Público
             legalizado al correo
-            <a href="mailto:mariela.quingaluisa@cotopaxi.gob.ec"
-                style="color:#000; text-decoration: underline;">mariela.quingaluisa@cotopaxi.gob.ec</a> con copia a
-            <a href="mailto:mentor.cordova@cotopaxi.gob.ec"
-                style="color:#000; text-decoration: underline;">mentor.cordova@cotopaxi.gob.ec</a>;
-            <a href="mailto:paulina.lopez@cotopaxi.gob.ec"
-                style="color:#000; text-decoration: underline;">paulina.lopez@cotopaxi.gob.ec</a>.
+            <a href="mailto:{{ $gestorEmail }}"
+                style="color:#000; text-decoration: underline;">{{ $gestorEmail }}</a> con copia a
+            <a href="mailto:{{ $tesoreroEmail }}"
+                style="color:#000; text-decoration: underline;">{{ $tesoreroEmail }}</a>@if($copiaEmail);
+            <a href="mailto:{{ $copiaEmail }}"
+                style="color:#000; text-decoration: underline;">{{ $copiaEmail }}</a>@endif.
         </p>
     </div>
 
@@ -337,8 +349,8 @@
                 <!-- FIRMA 1 -->
                 <td style="width: 33%; text-align: left;">
                     <div class="nombre-firma">
-                        <p style="margin:0; font-weight:normal;">Tlga. Mariela Quingaluisa</p>
-                        <p style="margin:0; font-weight:bold; font-size:10pt;">GESTOR DE TESORERIA</p>
+                        <p style="margin:0; font-weight:normal;">{{ $gestorNombre }}</p>
+                        <p style="margin:0; font-weight:bold; font-size:10pt;">{{ $gestorCargo }}</p>
                     </div>
                 </td>
 
@@ -363,8 +375,8 @@
                 <!-- FIRMA 2 -->
                 <td style="width: 33%; text-align: center;">
                     <div class="nombre-firma">
-                        <p style="margin:0; font-weight:normal;">Lic. Mentor Córdova Naranjo</p>
-                        <p style="margin:0; font-weight:bold; font-size:10pt;">TESORERO</p>
+                        <p style="margin:0; font-weight:normal;">{{ $tesoreroNombre }}</p>
+                        <p style="margin:0; font-weight:bold; font-size:10pt;">{{ $tesoreroCargo }}</p>
                     </div>
                 </td>
             </tr>

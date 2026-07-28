@@ -22,9 +22,9 @@ class PolizaController extends Controller
     {
         $query = Poliza::with(['sucursal.aseguradora', 'sucursal.ciudad', 'usuario', 'contrato.contratista', 'operadorAmbiental', 'renovacionDe']);
 
-        // El rol Gestor Tesorería Ambiente solo puede ver pólizas ambientales
-        if (Auth::user()->hasRole('Gestor Tesorería Ambiente')) {
-            $query->where('categoria_poliza', 'ambiental');
+        // Por defecto, al cargar por primera vez para el rol Gestor Tesorería Ambiente, filtramos por 'ambiental' si no ha especificado una categoría en el filtro
+        if (Auth::user()->hasRole('Gestor Tesorería Ambiente') && !$request->has('categoria')) {
+            $request->merge(['categoria' => 'ambiental']);
         }
 
         // Filtros
@@ -101,7 +101,7 @@ class PolizaController extends Controller
             'polizas' => $polizas,
             'filters' => $request->only(['search', 'estado', 'categoria', 'subtipo', 'bandeja_tesorero', 'bandeja_prefecto', 'bandeja_gestor_envio', 'bandeja_gestor_archivo', 'sort_by', 'sort_dir']),
             'esGestorAmbiental' => Auth::user()->hasRole('Gestor Tesorería Ambiente'),
-            'esPrefecto' => Auth::user()->hasRole('Prefecto/a'),
+            'esPrefecto' => Auth::user()->hasAnyRole(['Prefecto/a', 'Prefecto/a Subrogante']),
         ]);
     }
 
@@ -112,9 +112,8 @@ class PolizaController extends Controller
     {
         $query = Poliza::with(['sucursal.aseguradora', 'sucursal.ciudad', 'usuario', 'contrato.contratista', 'operadorAmbiental']);
 
-        // El rol Gestor Tesorería Ambiente solo puede ver pólizas ambientales
-        if (Auth::user()->hasRole('Gestor Tesorería Ambiente')) {
-            $query->where('categoria_poliza', 'ambiental');
+        if (Auth::user()->hasRole('Gestor Tesorería Ambiente') && !$request->has('categoria')) {
+            $request->merge(['categoria' => 'ambiental']);
         }
 
         if ($request->has('search')) {
@@ -349,7 +348,7 @@ class PolizaController extends Controller
      */
     public function edit(Poliza $poliza)
     {
-        if (Auth::user()->hasRole('Prefecto/a')) {
+        if (Auth::user()->hasAnyRole(['Prefecto/a', 'Prefecto/a Subrogante'])) {
             return redirect()->route('polizas.show', $poliza->id)
                 ->with('error', 'No tienes permisos para editar pólizas.');
         }
@@ -375,7 +374,7 @@ class PolizaController extends Controller
      */
     public function update(Request $request, Poliza $poliza)
     {
-        if (Auth::user()->hasRole('Prefecto/a')) {
+        if (Auth::user()->hasAnyRole(['Prefecto/a', 'Prefecto/a Subrogante'])) {
             return response()->json(['message' => 'No tienes permisos para editar pólizas.'], 403);
         }
 
@@ -625,6 +624,13 @@ class PolizaController extends Controller
 
             $user = auth()->user();
 
+            if (!$user->is_active) {
+                if ($request->wantsJson() || $request->ajax()) {
+                    return response()->json(['message' => 'Tu usuario se encuentra temporalmente inactivo o subrogado.'], 403);
+                }
+                return back()->with('error', 'Tu usuario se encuentra temporalmente inactivo o subrogado.');
+            }
+
             if (!$user->certificado_path) {
                 if ($request->wantsJson() || $request->ajax()) {
                     return response()->json(['message' => 'No tienes un certificado configurado. Súbelo en tu perfil primero.'], 422);
@@ -652,10 +658,10 @@ class PolizaController extends Controller
 
                 // Actualizar banderines en la base de datos
                 $roles = $user->getRoleNames();
-                if ($roles->contains('Gestor de Tesorería')) {
+                if ($roles->contains('Gestor de Tesorería') || $roles->contains('Gestor de Tesorería Subrogante')) {
                     $poliza->oficio_firmado_gestor = true;
                 }
-                if ($roles->contains('Tesorero')) {
+                if ($roles->contains('Tesorero') || $roles->contains('Tesorero Subrogante')) {
                     $poliza->oficio_firmado_tesorero = true;
                 }
                 $poliza->save();
@@ -686,8 +692,11 @@ class PolizaController extends Controller
      */
     public function regenerarOficio(Poliza $poliza)
     {
+        // 1. Si ya tiene firmas, la Gestora está forzando la regeneración. Resetear todo.
         if ($poliza->oficio_firmado_gestor || $poliza->oficio_firmado_tesorero) {
-            return redirect()->back()->with('error', 'No se puede regenerar el oficio porque ya tiene firmas. Cancela o reversa las firmas si es absolutamente necesario.');
+            $poliza->oficio_firmado_gestor = false;
+            $poliza->oficio_firmado_tesorero = false;
+            $poliza->save();
         }
 
         if (!$poliza->oficio_path || !$poliza->oficio_id) {
@@ -743,7 +752,10 @@ class PolizaController extends Controller
         ]);
 
         $user = Auth::user();
-        if (!$user->hasAnyRole(['Prefecto/a', 'Administrador', 'Super Admin'])) {
+        if (!$user->is_active) {
+            return response()->json(['message' => 'Tu usuario se encuentra temporalmente inactivo o subrogado.'], 403);
+        }
+        if (!$user->hasAnyRole(['Prefecto/a', 'Prefecto/a Subrogante', 'Administrador', 'Super Admin'])) {
             return response()->json(['message' => 'No tienes permisos para firmar renovaciones.'], 403);
         }
 

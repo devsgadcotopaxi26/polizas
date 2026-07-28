@@ -15,6 +15,7 @@ const props = defineProps({
     categoriasLabels: Object,
     mailConfig: Object,
     diasAnticipacion: Number,
+    firmantesOficio: Object,
 });
 
 const form = useForm({
@@ -83,6 +84,22 @@ const formDias = useForm({
 
 const submitDias = () => {
     formDias.post(route("configuracion.dias_anticipacion"), {
+        preserveScroll: true,
+    });
+};
+
+const formFirmantes = useForm({
+    gestor_nombre: props.firmantesOficio?.gestor_nombre || '',
+    gestor_cargo: props.firmantesOficio?.gestor_cargo || '',
+    gestor_email: props.firmantesOficio?.gestor_email || '',
+    tesorero_nombre: props.firmantesOficio?.tesorero_nombre || '',
+    tesorero_cargo: props.firmantesOficio?.tesorero_cargo || '',
+    tesorero_email: props.firmantesOficio?.tesorero_email || '',
+    copia_email: props.firmantesOficio?.copia_email || '',
+});
+
+const submitFirmantes = () => {
+    formFirmantes.post(route("configuracion.firmantes_oficio"), {
         preserveScroll: true,
     });
 };
@@ -494,6 +511,88 @@ const submitDias = () => {
                                 </PrimaryButton>
                             </form>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Tarjeta de Configuración de Firmantes y Subrogaciones en Oficios -->
+                <div class="mt-8 bg-white overflow-hidden shadow-xl sm:rounded-2xl border border-slate-100">
+                    <div class="p-8 sm:p-10">
+                        <div class="flex items-center gap-4 mb-6">
+                            <div class="p-3 bg-indigo-50 text-indigo-600 rounded-xl">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-2xl font-bold text-slate-800">Firmantes y Subrogaciones en Oficios de Renovación</h3>
+                                <p class="text-sm text-slate-500 mt-1">
+                                    Configura los nombres, cargos y correos que se imprimirán en los oficios oficiales. Ideal cuando el <strong>Tesorero</strong> entra en vacaciones (subrogación) o al asignar a la <strong>Gestora B</strong>.
+                                </p>
+                            </div>
+                        </div>
+
+                        <form @submit.prevent="submitFirmantes" class="bg-slate-50 border border-slate-200 shadow-[0_4px_20px_rgb(0,0,0,0.03)] rounded-2xl p-6">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Columna Gestor -->
+                                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                                    <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+                                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-indigo-500"></span>
+                                        <h4 class="font-bold text-slate-800">Gestor(a) de Tesorería (Firma Izquierda)</h4>
+                                    </div>
+                                    <div>
+                                        <InputLabel for="gestor_nombre" value="Nombre del Gestor(a)" />
+                                        <TextInput id="gestor_nombre" type="text" class="mt-1 block w-full" v-model="formFirmantes.gestor_nombre" required placeholder="Ej: Tlga. Mariela Quingaluisa" />
+                                        <InputError class="mt-2" :message="formFirmantes.errors.gestor_nombre" />
+                                    </div>
+                                    <div>
+                                        <InputLabel for="gestor_cargo" value="Cargo para el Pie de Firma" />
+                                        <TextInput id="gestor_cargo" type="text" class="mt-1 block w-full" v-model="formFirmantes.gestor_cargo" required placeholder="Ej: GESTOR DE TESORERÍA / SUBROGANTE" />
+                                        <InputError class="mt-2" :message="formFirmantes.errors.gestor_cargo" />
+                                    </div>
+                                    <div>
+                                        <InputLabel for="gestor_email" value="Correo Electrónico" />
+                                        <TextInput id="gestor_email" type="email" class="mt-1 block w-full" v-model="formFirmantes.gestor_email" required placeholder="mariela.quingaluisa@cotopaxi.gob.ec" />
+                                        <InputError class="mt-2" :message="formFirmantes.errors.gestor_email" />
+                                    </div>
+                                </div>
+
+                                <!-- Columna Tesorero -->
+                                <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
+                                    <div class="flex items-center gap-2 border-b border-slate-100 pb-3">
+                                        <span class="inline-block w-2.5 h-2.5 rounded-full bg-emerald-500"></span>
+                                        <h4 class="font-bold text-slate-800">Tesorero(a) (Firma Derecha)</h4>
+                                    </div>
+                                    <div>
+                                        <InputLabel for="tesorero_nombre" value="Nombre del Tesorero(a)" />
+                                        <TextInput id="tesorero_nombre" type="text" class="mt-1 block w-full" v-model="formFirmantes.tesorero_nombre" required placeholder="Ej: Lic. Mentor Córdova Naranjo" />
+                                        <InputError class="mt-2" :message="formFirmantes.errors.tesorero_nombre" />
+                                    </div>
+                                    <div>
+                                        <InputLabel for="tesorero_cargo" value="Cargo para el Pie de Firma" />
+                                        <TextInput id="tesorero_cargo" type="text" class="mt-1 block w-full" v-model="formFirmantes.tesorero_cargo" required placeholder="Ej: TESORERO / TESORERO SUBROGANTE" />
+                                        <InputError class="mt-2" :message="formFirmantes.errors.tesorero_cargo" />
+                                    </div>
+                                    <div>
+                                        <InputLabel for="tesorero_email" value="Correo Electrónico" />
+                                        <TextInput id="tesorero_email" type="email" class="mt-1 block w-full" v-model="formFirmantes.tesorero_email" required placeholder="mentor.cordova@cotopaxi.gob.ec" />
+                                        <InputError class="mt-2" :message="formFirmantes.errors.tesorero_email" />
+                                    </div>
+                                </div>
+
+                                <!-- Correo en Copia (CC) -->
+                                <div class="md:col-span-2 bg-white p-4 rounded-xl border border-slate-200 shadow-sm">
+                                    <InputLabel for="copia_email" value="Correo Electrónico en Copia Adicional (Párrafo de cierre)" />
+                                    <TextInput id="copia_email" type="email" class="mt-1 block w-full" v-model="formFirmantes.copia_email" placeholder="paulina.lopez@cotopaxi.gob.ec (Opcional)" />
+                                    <InputError class="mt-2" :message="formFirmantes.errors.copia_email" />
+                                </div>
+                            </div>
+
+                            <div class="flex items-center justify-end mt-6 pt-6 border-t border-slate-200">
+                                <PrimaryButton class="!py-3 !px-8 text-base bg-indigo-600 border-indigo-600 hover:bg-indigo-700 focus:bg-indigo-700 active:bg-indigo-800" :class="{ 'opacity-25': formFirmantes.processing }" :disabled="formFirmantes.processing">
+                                    Guardar Firmantes de Oficio
+                                </PrimaryButton>
+                            </div>
+                        </form>
                     </div>
                 </div>
 
