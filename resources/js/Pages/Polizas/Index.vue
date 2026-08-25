@@ -388,11 +388,12 @@ const formatDate = (date) => {
                         </select>
 
                         <!-- Filtro Mes/Año -->
-                        <div class="relative w-full md:w-auto">
+                        <div class="relative w-full md:w-auto flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-2 shadow-sm focus-within:ring-2 focus-within:ring-[#024283] focus-within:border-[#024283] transition duration-150">
+                            <span class="text-sm font-medium text-slate-500 whitespace-nowrap pl-2">Mes:</span>
                             <input
                                 type="month"
                                 v-model="mes_anio"
-                                class="block w-full md:w-40 pl-3 pr-3 py-2 text-base border-slate-200 focus:outline-none focus:ring-[#024283] focus:border-[#024283] sm:text-sm rounded-xl transition duration-150 ease-in-out shadow-sm bg-white text-slate-600"
+                                class="block w-full md:w-36 pl-1 pr-1 py-2 text-base border-none focus:ring-0 sm:text-sm bg-transparent text-slate-600"
                                 title="Filtrar por mes de registro"
                             />
                         </div>
