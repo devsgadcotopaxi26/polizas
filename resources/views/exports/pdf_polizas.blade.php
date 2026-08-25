@@ -29,6 +29,7 @@
                 <th>Valor Asegurado</th>
                 <th>Fecha Inicio</th>
                 <th>Fecha Vencimiento</th>
+                <th>Fecha de Registro</th>
                 <th>{{ isset($esGestorAmbiental) && $esGestorAmbiental ? 'Operador Ambiental' : 'Contratista' }}</th>
                 <th>Aseguradora</th>
                 <th>Estado</th>
@@ -43,6 +44,7 @@
                     <td>${{ number_format($poliza->valor_asegurado, 2) }}</td>
                     <td>{{ $poliza->fecha_inicio->format('d/m/Y') }}</td>
                     <td>{{ $poliza->fecha_vencimiento->format('d/m/Y') }}</td>
+                    <td>{{ $poliza->created_at ? $poliza->created_at->format('d/m/Y H:i') : 'N/A' }}</td>
                     <td>
                         @if(isset($esGestorAmbiental) && $esGestorAmbiental)
                             {{ $poliza->operadorAmbiental ? $poliza->operadorAmbiental->nombre : 'N/A' }}
@@ -50,7 +52,7 @@
                             {{ $poliza->contrato && $poliza->contrato->contratista ? $poliza->contrato->contratista->nombre_cont : 'N/A' }}
                         @endif
                     </td>
-                    <td>{{ $poliza->aseguradora ? $poliza->aseguradora->nombre_empresa : 'N/A' }}</td>
+                    <td>{{ $poliza->sucursal && $poliza->sucursal->aseguradora ? $poliza->sucursal->aseguradora->nombre_empresa : 'N/A' }}</td>
                     <td>{{ ucfirst(str_replace('_', ' ', $poliza->estado)) }}</td>
                 </tr>
             @endforeach

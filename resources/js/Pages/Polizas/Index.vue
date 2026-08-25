@@ -23,6 +23,7 @@ const search = ref(props.filters.search);
 const estado = ref(props.filters.estado || "");
 const categoria = ref(props.filters.categoria || "");
 const subtipo = ref(props.filters.subtipo || "");
+const mes_anio = ref(props.filters.mes_anio || "");
 const bandeja_tesorero = ref(
     props.filters.bandeja_tesorero === "true" ||
         props.filters.bandeja_tesorero === true,
@@ -101,6 +102,7 @@ watch(
         estado,
         categoria,
         subtipo,
+        mes_anio,
         bandeja_tesorero,
         bandeja_prefecto,
         bandeja_gestor_envio,
@@ -114,6 +116,7 @@ watch(
             valEstado,
             valCategoria,
             valSubtipo,
+            valMesAnio,
             valBandejaT,
             valBandejaA,
             valBandejaGE,
@@ -128,6 +131,7 @@ watch(
                     estado: valEstado,
                     categoria: valCategoria,
                     subtipo: valSubtipo,
+                    mes_anio: valMesAnio,
                     bandeja_tesorero: valBandejaT ? "true" : null,
                     bandeja_prefecto: valBandejaA ? "true" : null,
                     bandeja_gestor_envio: valBandejaGE ? "true" : null,
@@ -187,7 +191,7 @@ const formatDate = (date) => {
                 </div>
                 <div class="flex flex-wrap items-center gap-2">
                     <a
-                        :href="route('polizas.export_excel', { search, estado, categoria, subtipo, bandeja_tesorero: bandeja_tesorero ? 'true' : null, bandeja_prefecto: bandeja_prefecto ? 'true' : null, bandeja_gestor_envio: bandeja_gestor_envio ? 'true' : null, bandeja_gestor_archivo: bandeja_gestor_archivo ? 'true' : null })"
+                        :href="route('polizas.export_excel', { search, estado, categoria, subtipo, mes_anio, bandeja_tesorero: bandeja_tesorero ? 'true' : null, bandeja_prefecto: bandeja_prefecto ? 'true' : null, bandeja_gestor_envio: bandeja_gestor_envio ? 'true' : null, bandeja_gestor_archivo: bandeja_gestor_archivo ? 'true' : null })"
                         class="inline-flex items-center px-4 py-2 bg-emerald-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-emerald-700 active:bg-emerald-800 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -197,7 +201,7 @@ const formatDate = (date) => {
                     </a>
                     
                     <a
-                        :href="route('polizas.export_pdf', { search, estado, categoria, subtipo, bandeja_tesorero: bandeja_tesorero ? 'true' : null, bandeja_prefecto: bandeja_prefecto ? 'true' : null, bandeja_gestor_envio: bandeja_gestor_envio ? 'true' : null, bandeja_gestor_archivo: bandeja_gestor_archivo ? 'true' : null })"
+                        :href="route('polizas.export_pdf', { search, estado, categoria, subtipo, mes_anio, bandeja_tesorero: bandeja_tesorero ? 'true' : null, bandeja_prefecto: bandeja_prefecto ? 'true' : null, bandeja_gestor_envio: bandeja_gestor_envio ? 'true' : null, bandeja_gestor_archivo: bandeja_gestor_archivo ? 'true' : null })"
                         target="_blank"
                         class="inline-flex items-center px-4 py-2 bg-rose-600 border border-transparent rounded-lg font-semibold text-xs text-white uppercase tracking-widest hover:bg-rose-700 active:bg-rose-800 focus:outline-none focus:ring-2 focus:ring-rose-500 focus:ring-offset-2 transition ease-in-out duration-150 shadow-sm"
                     >
@@ -382,6 +386,16 @@ const formatDate = (date) => {
                                 {{ op.label }}
                             </option>
                         </select>
+
+                        <!-- Filtro Mes/Año -->
+                        <div class="relative w-full md:w-auto">
+                            <input
+                                type="month"
+                                v-model="mes_anio"
+                                class="block w-full md:w-40 pl-3 pr-3 py-2 text-base border-slate-200 focus:outline-none focus:ring-[#024283] focus:border-[#024283] sm:text-sm rounded-xl transition duration-150 ease-in-out shadow-sm bg-white text-slate-600"
+                                title="Filtrar por mes de registro"
+                            />
+                        </div>
 
                         <!-- Filtro Estado -->
                         <select

@@ -63,6 +63,16 @@ class PolizaController extends Controller
             $query->where('subtipo_poliza', $request->subtipo);
         }
 
+        if ($request->filled('mes_anio')) {
+            try {
+                $fecha = \Carbon\Carbon::createFromFormat('Y-m', $request->mes_anio);
+                $query->whereYear('created_at', $fecha->year)
+                      ->whereMonth('created_at', $fecha->month);
+            } catch (\Exception $e) {
+                // Formato inválido ignorado
+            }
+        }
+
         if ($request->filled('bandeja_tesorero')) {
             $query->whereNotNull('oficio_path')
                 ->where('oficio_firmado_gestor', true)
@@ -99,7 +109,7 @@ class PolizaController extends Controller
 
         return Inertia::render('Polizas/Index', [
             'polizas' => $polizas,
-            'filters' => $request->only(['search', 'estado', 'categoria', 'subtipo', 'bandeja_tesorero', 'bandeja_prefecto', 'bandeja_gestor_envio', 'bandeja_gestor_archivo', 'sort_by', 'sort_dir']),
+            'filters' => $request->only(['search', 'estado', 'categoria', 'subtipo', 'mes_anio', 'bandeja_tesorero', 'bandeja_prefecto', 'bandeja_gestor_envio', 'bandeja_gestor_archivo', 'sort_by', 'sort_dir']),
             'esGestorAmbiental' => Auth::user()->hasRole('Gestor Tesorería Ambiente'),
             'esPrefecto' => Auth::user()->hasAnyRole(['Prefecto/a', 'Prefecto/a Subrogante']),
         ]);
@@ -149,6 +159,16 @@ class PolizaController extends Controller
 
         if ($request->filled('subtipo')) {
             $query->where('subtipo_poliza', $request->subtipo);
+        }
+
+        if ($request->filled('mes_anio')) {
+            try {
+                $fecha = \Carbon\Carbon::createFromFormat('Y-m', $request->mes_anio);
+                $query->whereYear('created_at', $fecha->year)
+                      ->whereMonth('created_at', $fecha->month);
+            } catch (\Exception $e) {
+                // Formato inválido ignorado
+            }
         }
 
         if ($request->filled('bandeja_tesorero')) {
@@ -210,6 +230,7 @@ class PolizaController extends Controller
             'Valor Asegurado',
             'Fecha Inicio',
             'Fecha Vencimiento',
+            'Fecha de Registro',
             $esGestorAmbiental ? 'Operador Ambiental' : 'Contratista',
             'Aseguradora',
             'Estado',
@@ -233,6 +254,7 @@ class PolizaController extends Controller
                 $poliza->valor_asegurado,
                 $poliza->fecha_inicio->format('d/m/Y'),
                 $poliza->fecha_vencimiento->format('d/m/Y'),
+                $poliza->created_at ? $poliza->created_at->format('d/m/Y H:i') : 'N/A',
                 $entidad,
                 $poliza->sucursal && $poliza->sucursal->aseguradora ? $poliza->sucursal->aseguradora->nombre_empresa : 'N/A',
                 ucfirst(str_replace('_', ' ', $poliza->estado)),
