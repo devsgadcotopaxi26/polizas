@@ -175,6 +175,27 @@ const formatDate = (date) => {
         day: "numeric",
     });
 };
+
+// Generar opciones de meses (2 años atrás y 1 a futuro)
+const mesAnioOptions = computed(() => {
+    const options = [];
+    const today = new Date();
+    const currentYear = today.getFullYear();
+    
+    for (let year = currentYear + 1; year >= currentYear - 2; year--) {
+        for (let month = 12; month >= 1; month--) {
+            const monthStr = month.toString().padStart(2, "0");
+            const date = new Date(year, month - 1, 1);
+            let label = date.toLocaleDateString("es-EC", { month: "long", year: "numeric" });
+            label = label.charAt(0).toUpperCase() + label.slice(1); // Capitalizar
+            options.push({
+                value: `${year}-${monthStr}`,
+                label: label
+            });
+        }
+    }
+    return options;
+});
 </script>
 
 <template>
@@ -386,16 +407,18 @@ const formatDate = (date) => {
                                 {{ op.label }}
                             </option>
                         </select>
-
                         <!-- Filtro Mes/Año -->
-                        <div class="relative w-full md:w-auto flex items-center gap-2 bg-white border border-slate-200 rounded-xl px-2 shadow-sm focus-within:ring-2 focus-within:ring-[#024283] focus-within:border-[#024283] transition duration-150">
-                            <span class="text-sm font-medium text-slate-500 whitespace-nowrap pl-2">Mes:</span>
-                            <input
-                                type="month"
+                        <div class="relative w-full md:w-auto flex items-center gap-2">
+                            <select
                                 v-model="mes_anio"
-                                class="block w-full md:w-36 pl-1 pr-1 py-2 text-base border-none focus:ring-0 sm:text-sm bg-transparent text-slate-600"
+                                class="block w-full md:w-48 pl-3 pr-10 py-2 text-base border-slate-200 focus:outline-none focus:ring-[#024283] focus:border-[#024283] sm:text-sm rounded-xl transition duration-150 ease-in-out shadow-sm bg-white text-slate-700 font-medium"
                                 title="Filtrar por mes de registro"
-                            />
+                            >
+                                <option value="">Todos los meses</option>
+                                <option v-for="op in mesAnioOptions" :key="op.value" :value="op.value">
+                                    {{ op.label }}
+                                </option>
+                            </select>
                         </div>
 
                         <!-- Filtro Estado -->
