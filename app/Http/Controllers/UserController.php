@@ -52,6 +52,7 @@ class UserController extends Controller
             'password' => Hash::make($request->password),
             'must_change_password' => $request->has('must_change_password') ? $request->boolean('must_change_password') : true,
             'is_active' => $request->has('is_active') ? $request->boolean('is_active') : true,
+            'can_view_other_polizas' => $request->boolean('can_view_other_polizas'),
         ]);
 
         $user->assignRole($request->role);
@@ -101,6 +102,9 @@ class UserController extends Controller
         }
         if ($request->has('must_change_password')) {
             $user->must_change_password = $request->boolean('must_change_password');
+        }
+        if ($request->has('can_view_other_polizas')) {
+            $user->can_view_other_polizas = $request->boolean('can_view_other_polizas');
         }
 
         if ($request->filled('password')) {

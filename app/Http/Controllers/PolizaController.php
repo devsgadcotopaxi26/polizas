@@ -22,10 +22,7 @@ class PolizaController extends Controller
     {
         $query = Poliza::with(['sucursal.aseguradora', 'sucursal.ciudad', 'usuario', 'contrato.contratista', 'operadorAmbiental', 'renovacionDe']);
 
-        // Por defecto, al cargar por primera vez para el rol Gestor Tesorería Ambiente, filtramos por 'ambiental' si no ha especificado una categoría en el filtro
-        if (Auth::user()->hasRole('Gestor Tesorería Ambiente') && !$request->has('categoria')) {
-            $request->merge(['categoria' => 'ambiental']);
-        }
+        $this->aplicarFiltroCategoriaAmbiental($request);
 
         // Filtros
         if ($request->has('search')) {
@@ -112,7 +109,50 @@ class PolizaController extends Controller
             'filters' => $request->only(['search', 'estado', 'categoria', 'subtipo', 'mes_anio', 'bandeja_tesorero', 'bandeja_prefecto', 'bandeja_gestor_envio', 'bandeja_gestor_archivo', 'sort_by', 'sort_dir']),
             'esGestorAmbiental' => Auth::user()->hasRole('Gestor Tesorería Ambiente'),
             'esPrefecto' => Auth::user()->hasAnyRole(['Prefecto/a', 'Prefecto/a Subrogante']),
+            'restringidoSoloAmbiental' => Auth::user()->hasRole('Gestor Tesorería Ambiente') && !Auth::user()->can_view_other_polizas,
         ]);
+    }
+
+    /**
+     * Aborta con 403 si el usuario tiene el rol Gestor Tesorería Ambiente sin el
+     * privilegio can_view_other_polizas e intenta acceder a una categoría distinta
+     * de 'ambiental'. Evita que la restricción se sortee accediendo por ID directo.
+     */
+    private function verificarAccesoCategoria(?string $categoria): void
+    {
+        $user = Auth::user();
+
+        if (
+            $categoria !== 'ambiental'
+            && $user->hasRole('Gestor Tesorería Ambiente')
+            && !$user->can_view_other_polizas
+        ) {
+            abort(403, 'No tienes permisos para acceder a pólizas de esta categoría.');
+        }
+    }
+
+    /**
+     * Restringe la categoría a 'ambiental' para el rol Gestor Tesorería Ambiente.
+     * Si el usuario tiene el privilegio can_view_other_polizas, la categoría solo
+     * se aplica como valor por defecto (puede filtrar otras categorías). Si no lo
+     * tiene, la restricción es dura: siempre ve únicamente pólizas ambientales.
+     */
+    private function aplicarFiltroCategoriaAmbiental(Request $request): void
+    {
+        $user = Auth::user();
+
+        if (!$user->hasRole('Gestor Tesorería Ambiente')) {
+            return;
+        }
+
+        if ($user->can_view_other_polizas) {
+            if (!$request->has('categoria')) {
+                $request->merge(['categoria' => 'ambiental']);
+            }
+            return;
+        }
+
+        $request->merge(['categoria' => 'ambiental']);
     }
 
     /**
@@ -122,9 +162,7 @@ class PolizaController extends Controller
     {
         $query = Poliza::with(['sucursal.aseguradora', 'sucursal.ciudad', 'usuario', 'contrato.contratista', 'operadorAmbiental']);
 
-        if (Auth::user()->hasRole('Gestor Tesorería Ambiente') && !$request->has('categoria')) {
-            $request->merge(['categoria' => 'ambiental']);
-        }
+        $this->aplicarFiltroCategoriaAmbiental($request);
 
         if ($request->has('search')) {
             $search = '%' . $request->search . '%';
@@ -321,6 +359,8 @@ class PolizaController extends Controller
             'archivo_acta' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
         ]);
 
+        $this->verificarAccesoCategoria($validated['categoria_poliza']);
+
         $validated['created_by'] = Auth::id();
         if (!isset($validated['estado'])) {
             $validated['estado'] = 'vigente';
@@ -341,6 +381,8 @@ class PolizaController extends Controller
      */
     public function show(Poliza $poliza)
     {
+        $this->verificarAccesoCategoria($poliza->categoria_poliza);
+
         $poliza->load(['sucursal.aseguradora', 'sucursal.ciudad', 'usuario', 'contrato.contratista', 'contrato.administrador', 'operadorAmbiental']);
 
         $renovacionDe = $poliza->renovacionDe()->with('polizaOriginal')->first();
@@ -370,6 +412,8 @@ class PolizaController extends Controller
      */
     public function edit(Poliza $poliza)
     {
+        $this->verificarAccesoCategoria($poliza->categoria_poliza);
+
         if (Auth::user()->hasAnyRole(['Prefecto/a', 'Prefecto/a Subrogante'])) {
             return redirect()->route('polizas.show', $poliza->id)
                 ->with('error', 'No tienes permisos para editar pólizas.');
@@ -396,6 +440,8 @@ class PolizaController extends Controller
      */
     public function update(Request $request, Poliza $poliza)
     {
+        $this->verificarAccesoCategoria($poliza->categoria_poliza);
+
         if (Auth::user()->hasAnyRole(['Prefecto/a', 'Prefecto/a Subrogante'])) {
             return response()->json(['message' => 'No tienes permisos para editar pólizas.'], 403);
         }
@@ -418,6 +464,8 @@ class PolizaController extends Controller
             'archivo_acta' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
             'archivo_renovacion' => 'nullable|file|mimes:pdf|max:10240',
         ]);
+
+        $this->verificarAccesoCategoria($validated['categoria_poliza']);
 
         if ($request->hasFile('archivo_acta')) {
             if ($poliza->archivo_acta) {
@@ -457,6 +505,8 @@ class PolizaController extends Controller
      */
     public function destroy(Poliza $poliza)
     {
+        $this->verificarAccesoCategoria($poliza->categoria_poliza);
+
         $poliza->delete();
         return redirect()->route('polizas.index')->with('message', 'Póliza eliminada exitosamente.');
     }
@@ -517,6 +567,8 @@ class PolizaController extends Controller
      */
     public function renovar(Request $request, Poliza $poliza)
     {
+        $this->verificarAccesoCategoria($poliza->categoria_poliza);
+
         $validated = $request->validate([
             'valor_asegurado' => 'required|numeric|min:0',
             'fecha_inicio' => 'required|date',
@@ -607,6 +659,8 @@ class PolizaController extends Controller
      */
     public function generarOficioPdf(\Illuminate\Http\Request $request, Poliza $poliza)
     {
+        $this->verificarAccesoCategoria($poliza->categoria_poliza);
+
         $poliza->load(['sucursal.aseguradora', 'sucursal.ciudad', 'contrato.contratista', 'contrato.administrador', 'usuario']);
 
         // 1. Obtener o Generar el Documento Base
@@ -714,6 +768,8 @@ class PolizaController extends Controller
      */
     public function regenerarOficio(Poliza $poliza)
     {
+        $this->verificarAccesoCategoria($poliza->categoria_poliza);
+
         // 1. Si ya tiene firmas, la Gestora está forzando la regeneración. Resetear todo.
         if ($poliza->oficio_firmado_gestor || $poliza->oficio_firmado_tesorero) {
             $poliza->oficio_firmado_gestor = false;
@@ -742,6 +798,8 @@ class PolizaController extends Controller
      */
     public function getPdfRenovacion(Poliza $poliza)
     {
+        $this->verificarAccesoCategoria($poliza->categoria_poliza);
+
         $renovacion = \App\Models\PolizaRenovacion::where('poliza_nueva_id', $poliza->id)->firstOrFail();
 
         if (!$renovacion->archivo_renovacion) {
@@ -765,6 +823,8 @@ class PolizaController extends Controller
      */
     public function firmarRenovacion(Request $request, Poliza $poliza, \App\Services\SignPdfService $signService)
     {
+        $this->verificarAccesoCategoria($poliza->categoria_poliza);
+
         $request->validate([
             'password_certificado' => 'required|string',
             'sig_x' => 'nullable|numeric',
@@ -877,6 +937,8 @@ class PolizaController extends Controller
      */
     public function enviarOficio(Request $request, Poliza $poliza)
     {
+        $this->verificarAccesoCategoria($poliza->categoria_poliza);
+
         $request->validate([
             'to' => 'required|array|min:1',
             'to.*' => 'email',
