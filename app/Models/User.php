@@ -32,6 +32,7 @@ class User extends Authenticatable
         'certificado_path',
         'must_change_password',
         'is_active',
+        'can_view_other_polizas',
     ];
 
     /**
@@ -56,6 +57,7 @@ class User extends Authenticatable
             'password' => 'hashed',
             'must_change_password' => 'boolean',
             'is_active' => 'boolean',
+            'can_view_other_polizas' => 'boolean',
         ];
     }
 

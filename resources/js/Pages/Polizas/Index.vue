@@ -17,6 +17,7 @@ const props = defineProps({
     filters: Object,
     esGestorAmbiental: Boolean,
     esPrefecto: Boolean,
+    restringidoSoloAmbiental: Boolean,
 });
 
 const search = ref(props.filters.search);
@@ -382,15 +383,20 @@ const mesAnioOptions = computed(() => {
                     <div
                         class="flex flex-wrap items-center gap-3 w-full md:w-auto"
                     >
-                        <!-- Filtro Categoria: visible para todos, con 'ambiental' seleccionado por defecto si es Gestor Ambiental -->
+                        <!-- Filtro Categoria: si está restringido solo a ambientales, únicamente se ofrece esa opción -->
                         <select
                             v-model="categoria"
                             class="block w-full md:w-44 pl-3 pr-10 py-2 text-base border-slate-200 focus:outline-none focus:ring-[#024283] focus:border-[#024283] sm:text-sm rounded-xl transition duration-150 ease-in-out shadow-sm bg-white"
                         >
-                            <option value="">Todos los tipos</option>
-                            <option value="ambiental">Ambiental</option>
-                            <option value="obras">Obras</option>
-                            <option value="proveedores">Proveedores</option>
+                            <template v-if="restringidoSoloAmbiental">
+                                <option value="ambiental">Ambiental</option>
+                            </template>
+                            <template v-else>
+                                <option value="">Todos los tipos</option>
+                                <option value="ambiental">Ambiental</option>
+                                <option value="obras">Obras</option>
+                                <option value="proveedores">Proveedores</option>
+                            </template>
                         </select>
 
                         <!-- Filtro Subtipo -->

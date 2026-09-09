@@ -34,7 +34,10 @@ const form = useForm({
     role: "Usuario",
     is_active: true,
     must_change_password: true,
+    can_view_other_polizas: false,
 });
+
+const ROL_GESTOR_TESORERIA_AMBIENTE = "Gestor Tesorería Ambiente";
 
 const openModal = (user = null) => {
     editing.value = user;
@@ -49,10 +52,12 @@ const openModal = (user = null) => {
         form.password_confirmation = "";
         form.is_active = user.is_active !== undefined ? user.is_active : true;
         form.must_change_password = user.must_change_password !== undefined ? user.must_change_password : false;
+        form.can_view_other_polizas = user.can_view_other_polizas !== undefined ? user.can_view_other_polizas : false;
     } else {
         form.reset();
         form.is_active = true;
         form.must_change_password = true;
+        form.can_view_other_polizas = false;
     }
     showingModal.value = true;
 };
@@ -463,6 +468,20 @@ const togglePasswordChange = (user) => {
                             />
                             <label for="must_change_password" class="text-sm font-medium text-slate-700 cursor-pointer">
                                 <strong>Pedir cambio de contraseña</strong> (Exigir al usuario cambiar su clave en su próximo inicio de sesión)
+                            </label>
+                        </div>
+                        <div
+                            v-if="form.role === ROL_GESTOR_TESORERIA_AMBIENTE"
+                            class="flex items-center gap-3"
+                        >
+                            <input
+                                id="can_view_other_polizas"
+                                v-model="form.can_view_other_polizas"
+                                type="checkbox"
+                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:ring-indigo-500 w-5 h-5"
+                            />
+                            <label for="can_view_other_polizas" class="text-sm font-medium text-slate-700 cursor-pointer">
+                                <strong>Puede ver otros tipos de póliza</strong> (Además de las ambientales, permitir ver obras y proveedores)
                             </label>
                         </div>
                     </div>
