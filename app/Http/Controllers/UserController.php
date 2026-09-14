@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rules;
 use Inertia\Inertia;
 use Spatie\Permission\Models\Role;
@@ -42,22 +44,25 @@ class UserController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:' . User::class,
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'role' => 'required|string|exists:roles,name',
         ]);
 
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'must_change_password' => $request->has('must_change_password') ? $request->boolean('must_change_password') : true,
+            // Contraseña aleatoria e inutilizable: el usuario la establece él mismo
+            // a través del enlace que le llega por correo (ver Password::sendResetLink abajo).
+            'password' => Hash::make(Str::random(40)),
+            'must_change_password' => true,
             'is_active' => $request->has('is_active') ? $request->boolean('is_active') : true,
             'can_view_other_polizas' => $request->boolean('can_view_other_polizas'),
         ]);
 
         $user->assignRole($request->role);
 
-        return redirect()->route('users.index')->with('success', 'Usuario creado exitosamente.');
+        Password::sendResetLink(['email' => $user->email]);
+
+        return redirect()->route('users.index')->with('success', "Usuario creado. Se envió un correo a {$user->email} para que establezca su contraseña.");
     }
 
     /**
@@ -146,6 +151,20 @@ class UserController extends Controller
             : 'ya no se le exige cambio obligatorio de contraseña';
 
         return back()->with('success', "Al usuario {$user->name} {$estado}.");
+    }
+
+    /**
+     * Reenviar el correo de invitación/restablecimiento de contraseña.
+     */
+    public function resendInvite(User $user)
+    {
+        $status = Password::sendResetLink(['email' => $user->email]);
+
+        if ($status !== Password::RESET_LINK_SENT) {
+            return back()->with('error', 'No se pudo reenviar el correo: ' . __($status));
+        }
+
+        return back()->with('success', "Se reenvió el correo a {$user->email} para establecer su contraseña.");
     }
 
     /**

@@ -24,6 +24,7 @@ class PolizaRenovacion extends Model
         'observaciones',
         'usuario_id',
         'archivo_renovacion',
+        'anexo_renovacion',
         'estado_firma_asesor',
     ];
 

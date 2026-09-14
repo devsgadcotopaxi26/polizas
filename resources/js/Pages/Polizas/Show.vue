@@ -317,6 +317,7 @@ const renewForm = useForm({
         .split("T")[0],
     observaciones: "",
     archivo_renovacion: null,
+    anexo_renovacion: null,
 });
 
 const openRenewModal = () => {
@@ -329,6 +330,7 @@ const openRenewModal = () => {
         .split("T")[0];
     renewForm.observaciones = "";
     renewForm.archivo_renovacion = null;
+    renewForm.anexo_renovacion = null;
     isRenewModalOpen.value = true;
 };
 
@@ -346,6 +348,10 @@ const submitRenewal = () => {
 
 const handleRenewalFileUpload = (e) => {
     renewForm.archivo_renovacion = e.target.files[0];
+};
+
+const handleAnexoFileUpload = (e) => {
+    renewForm.anexo_renovacion = e.target.files[0];
 };
 
 const submitSignature = async () => {
@@ -701,6 +707,14 @@ const submitUploadFinal = () => {
                             >FIRMADO</span
                         >
                     </a>
+                    <a
+                        v-if="renovacion_de && renovacion_de.anexo_renovacion"
+                        :href="route('polizas.renovacion_anexo', poliza.id)"
+                        target="_blank"
+                        class="inline-flex items-center px-4 py-2 bg-indigo-100 border border-indigo-200 rounded-xl font-bold text-xs text-indigo-700 uppercase tracking-widest hover:bg-indigo-200 transition shadow-sm"
+                    >
+                        📎 Ver Anexo
+                    </a>
 
                     <!-- Escenario 2: Esta póliza es la ORIGINAL (sin renovacion_de propio) y tiene una renovación hecha -->
                     <a
@@ -724,6 +738,23 @@ const submitUploadFinal = () => {
                             class="ml-1 text-[10px] bg-emerald-500 text-white px-1 rounded"
                             >FIRMADO</span
                         >
+                    </a>
+                    <a
+                        v-if="
+                            !renovacion_de &&
+                            renovacion_hecha &&
+                            renovacion_hecha.anexo_renovacion
+                        "
+                        :href="
+                            route(
+                                'polizas.renovacion_anexo',
+                                renovacion_hecha.poliza_nueva_id,
+                            )
+                        "
+                        target="_blank"
+                        class="inline-flex items-center px-4 py-2 bg-indigo-100 border border-indigo-200 rounded-xl font-bold text-xs text-indigo-700 uppercase tracking-widest hover:bg-indigo-200 transition shadow-sm"
+                    >
+                        📎 Ver Anexo
                     </a>
 
                     <button
@@ -2391,6 +2422,24 @@ const submitUploadFinal = () => {
                     />
                     <InputError
                         :message="renewForm.errors.archivo_renovacion"
+                        class="mt-2 text-rose-500 text-sm"
+                    />
+                </div>
+
+                <div class="mt-4">
+                    <InputLabel
+                        for="anexo_renovacion"
+                        value="Anexo / Archivo Auxiliar (Opcional)"
+                        class="font-bold text-slate-700"
+                    />
+                    <input
+                        type="file"
+                        id="anexo_renovacion"
+                        @change="handleAnexoFileUpload"
+                        class="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
+                    />
+                    <InputError
+                        :message="renewForm.errors.anexo_renovacion"
                         class="mt-2 text-rose-500 text-sm"
                     />
                 </div>
