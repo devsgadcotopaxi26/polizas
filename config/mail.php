@@ -79,6 +79,16 @@ return [
             'transport' => 'array',
         ],
 
+        // Mailer de notificaciones generales del sistema (creación de cuentas, avisos, etc.),
+        // separado del mailer 'smtp' que usa el gestor para enviar oficios.
+        'sistema' => [
+            'transport' => 'gmailapi',
+            'service_account_path' => env('GMAIL_SERVICE_ACCOUNT_PATH', storage_path('app/google/gmail-service-account.json')),
+            'impersonate' => env('GMAIL_IMPERSONATE_EMAIL'),
+            'from_address' => env('MAIL_SISTEMA_FROM_ADDRESS'),
+            'from_name' => env('MAIL_SISTEMA_FROM_NAME', 'Sistema de Pólizas'),
+        ],
+
         'failover' => [
             'transport' => 'failover',
             'mailers' => [

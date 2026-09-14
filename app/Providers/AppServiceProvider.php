@@ -2,9 +2,12 @@
 
 namespace App\Providers;
 
+use App\Mail\Transport\GmailApiTransport;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Vite;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Validation\Rules\Password;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -21,6 +24,18 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Política de contraseñas aplicada en todos los formularios (login, cambio
+        // obligatorio, invitación de cuenta, "olvidé mi contraseña", etc.), ya que
+        // todos validan con Password::defaults().
+        Password::defaults(fn () => Password::min(8)->mixedCase()->numbers());
+
+        Mail::extend('gmailapi', function (array $config) {
+            return new GmailApiTransport(
+                $config['service_account_path'] ?? '',
+                $config['impersonate'] ?? '',
+            );
+        });
+
         // Forzar HTTPS y detectar URL raíz dinámicamente para soportar Dominio e IP simultáneamente
         if (isset($_SERVER['HTTP_HOST'])) {
             $isHttps = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on') 

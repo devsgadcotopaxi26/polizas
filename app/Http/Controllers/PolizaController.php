@@ -463,6 +463,7 @@ class PolizaController extends Controller
             'fecha_acta_definitiva' => 'nullable|date',
             'archivo_acta' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
             'archivo_renovacion' => 'nullable|file|mimes:pdf|max:10240',
+            'anexo_renovacion' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:10240',
         ]);
 
         $this->verificarAccesoCategoria($validated['categoria_poliza']);
@@ -492,8 +493,21 @@ class PolizaController extends Controller
             }
         }
 
-        // Quitar archivo_renovacion del array validated ya que se maneja aparte
-        unset($validated['archivo_renovacion']);
+        // Manejar reemplazo del anexo de renovación
+        if ($request->hasFile('anexo_renovacion')) {
+            $renovacion = $poliza->renovacionDe;
+            if ($renovacion) {
+                if ($renovacion->anexo_renovacion) {
+                    \Illuminate\Support\Facades\Storage::disk('public')->delete($renovacion->anexo_renovacion);
+                }
+                $renovacion->update([
+                    'anexo_renovacion' => $request->file('anexo_renovacion')->store('renovaciones/anexos', 'public'),
+                ]);
+            }
+        }
+
+        // Quitar archivo_renovacion/anexo_renovacion del array validated ya que se manejan aparte
+        unset($validated['archivo_renovacion'], $validated['anexo_renovacion']);
 
         $poliza->update($validated);
 
@@ -536,6 +550,9 @@ class PolizaController extends Controller
         if ($renovacion->archivo_renovacion) {
             \Illuminate\Support\Facades\Storage::disk('public')->delete($renovacion->archivo_renovacion);
         }
+        if ($renovacion->anexo_renovacion) {
+            \Illuminate\Support\Facades\Storage::disk('public')->delete($renovacion->anexo_renovacion);
+        }
 
         // Eliminar el registro de renovación
         $renovacion->delete();
@@ -575,6 +592,7 @@ class PolizaController extends Controller
             'fecha_vencimiento' => 'required|date|after_or_equal:fecha_inicio',
             'observaciones' => 'nullable|string',
             'archivo_renovacion' => 'nullable|file|mimes:pdf|max:10240', // 10MB máximo
+            'anexo_renovacion' => 'nullable|file|mimes:pdf,doc,docx,xls,xlsx,jpg,jpeg,png|max:10240', // 10MB máximo
         ]);
 
         // Validar que la póliza se puede renovar
@@ -639,6 +657,10 @@ class PolizaController extends Controller
 
         if ($request->hasFile('archivo_renovacion')) {
             $renovacionData['archivo_renovacion'] = $request->file('archivo_renovacion')->store('renovaciones', 'public');
+        }
+
+        if ($request->hasFile('anexo_renovacion')) {
+            $renovacionData['anexo_renovacion'] = $request->file('anexo_renovacion')->store('renovaciones/anexos', 'public');
         }
 
         \App\Models\PolizaRenovacion::create($renovacionData);
@@ -815,6 +837,31 @@ class PolizaController extends Controller
             'Content-Type' => 'application/pdf',
             'Content-Disposition' => 'inline; filename="renovacion_' . $poliza->numero_poliza . '.pdf"',
             'Cache-Control' => 'no-store, no-cache, must-revalidate, max-age=0'
+        ]);
+    }
+
+    /**
+     * Devuelve el archivo anexo/auxiliar adjuntado en la renovación
+     */
+    public function getAnexoRenovacion(Poliza $poliza)
+    {
+        $this->verificarAccesoCategoria($poliza->categoria_poliza);
+
+        $renovacion = \App\Models\PolizaRenovacion::where('poliza_nueva_id', $poliza->id)->firstOrFail();
+
+        if (!$renovacion->anexo_renovacion) {
+            abort(404, 'No hay anexo subido.');
+        }
+
+        $path = storage_path('app/public/' . $renovacion->anexo_renovacion);
+        if (!file_exists($path)) {
+            abort(404, 'Archivo no encontrado en el disco.');
+        }
+
+        $extension = pathinfo($path, PATHINFO_EXTENSION);
+
+        return response()->file($path, [
+            'Content-Disposition' => 'inline; filename="anexo_renovacion_' . $poliza->numero_poliza . '.' . $extension . '"',
         ]);
     }
 

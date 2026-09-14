@@ -44,6 +44,7 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
     Route::match(['get', 'post'], 'polizas/{poliza}/oficio-pdf', [PolizaController::class, 'generarOficioPdf'])->name('polizas.oficio_pdf');
     Route::post('polizas/{poliza}/regenerar-oficio', [PolizaController::class, 'regenerarOficio'])->name('polizas.regenerar_oficio');
     Route::get('polizas/{poliza}/renovacion-pdf', [PolizaController::class, 'getPdfRenovacion'])->name('polizas.renovacion_pdf');
+    Route::get('polizas/{poliza}/renovacion-anexo', [PolizaController::class, 'getAnexoRenovacion'])->name('polizas.renovacion_anexo');
     Route::post('polizas/{poliza}/renovacion-firmar', [PolizaController::class, 'firmarRenovacion'])->name('polizas.renovacion_firmar');
     Route::post('polizas/{poliza}/renovacion-final', [PolizaController::class, 'subirRenovacionFinal'])->name('polizas.renovacion_final');
     Route::post('polizas/{poliza}/enviar-oficio', [PolizaController::class, 'enviarOficio'])->name('polizas.enviar_oficio');
@@ -64,6 +65,7 @@ Route::middleware(['auth', 'must.change.password'])->group(function () {
         Route::resource('users', UserController::class);
         Route::patch('users/{user}/toggle-status', [UserController::class, 'toggleStatus'])->name('users.toggle_status');
         Route::patch('users/{user}/toggle-password-change', [UserController::class, 'togglePasswordChange'])->name('users.toggle_password_change');
+        Route::post('users/{user}/resend-invite', [UserController::class, 'resendInvite'])->name('users.resend_invite');
 
         // Auditoría Global
         Route::get('/auditoria', [\App\Http\Controllers\AuditoriaController::class, 'index'])->name('auditoria.index');

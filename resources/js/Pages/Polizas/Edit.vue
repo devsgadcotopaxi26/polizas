@@ -48,6 +48,7 @@ const form = useForm({
         : "",
     archivo_acta: null,
     archivo_renovacion: null,
+    anexo_renovacion: null,
 });
 
 // Subtipos disponibles según la categoría seleccionada
@@ -777,6 +778,44 @@ const operadoresConLabel = computed(() =>
                                 <InputError
                                     class="mt-2"
                                     :message="form.errors.archivo_renovacion"
+                                />
+                            </div>
+
+                            <!-- Anexo / archivo auxiliar -->
+                            <div class="mt-4 pt-4 border-t border-slate-200">
+                                <a
+                                    v-if="renovacion_de.anexo_renovacion"
+                                    :href="
+                                        route(
+                                            'polizas.renovacion_anexo',
+                                            poliza.id,
+                                        )
+                                    "
+                                    target="_blank"
+                                    class="inline-flex items-center gap-1.5 mb-2 px-3 py-1.5 text-xs font-semibold text-indigo-700 bg-indigo-50 rounded-lg hover:bg-indigo-100 transition border border-indigo-200"
+                                >
+                                    📎 Ver anexo actual
+                                </a>
+                                <InputLabel
+                                    for="anexo_renovacion"
+                                    :value="
+                                        renovacion_de.anexo_renovacion
+                                            ? 'Reemplazar Anexo / Archivo Auxiliar'
+                                            : 'Subir Anexo / Archivo Auxiliar (Opcional)'
+                                    "
+                                />
+                                <input
+                                    type="file"
+                                    id="anexo_renovacion"
+                                    @input="
+                                        form.anexo_renovacion =
+                                            $event.target.files[0]
+                                    "
+                                    class="mt-1 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100 transition"
+                                />
+                                <InputError
+                                    class="mt-2"
+                                    :message="form.errors.anexo_renovacion"
                                 />
                             </div>
                         </div>

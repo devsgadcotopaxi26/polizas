@@ -159,6 +159,19 @@ const togglePasswordChange = (user) => {
         },
     });
 };
+
+const resendInvite = (user) => {
+    openConfirmModal({
+        title: "Reenviar Invitación",
+        message: `¿Enviar nuevamente a "${user.email}" el correo para establecer su contraseña?`,
+        iconType: "purple",
+        confirmText: "Sí, reenviar",
+        confirmClass: "bg-sky-600 hover:bg-sky-700 text-white",
+        action: () => {
+            router.post(route("users.resend_invite", user.id), {}, { preserveScroll: true });
+        },
+    });
+};
 </script>
 
 <template>
@@ -335,6 +348,15 @@ const togglePasswordChange = (user) => {
                                                 </svg>
                                             </button>
                                             <button
+                                                @click="resendInvite(user)"
+                                                title="Reenviar correo para establecer contraseña"
+                                                class="p-2 rounded-lg transition-colors text-sky-600 hover:text-sky-900 bg-sky-50 hover:bg-sky-100"
+                                            >
+                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                                                </svg>
+                                            </button>
+                                            <button
                                                 @click="toggleStatus(user)"
                                                 :title="user.is_active ? 'Inactivar usuario (vacaciones o subrogado)' : 'Activar usuario'"
                                                 class="p-2 rounded-lg transition-colors"
@@ -486,46 +508,50 @@ const togglePasswordChange = (user) => {
                         </div>
                     </div>
 
-                    <!-- Campos de contraseña (requeridos al crear, opcionales al editar) -->
-                    <div>
-                        <InputLabel
-                            for="password"
-                            :value="
-                                editing
-                                    ? 'Nueva Contraseña (Dejar en blanco para no cambiar)'
-                                    : 'Contraseña'
-                            "
-                        />
-                        <TextInput
-                            id="password"
-                            v-model="form.password"
-                            type="password"
-                            class="mt-1 block w-full"
-                            :required="!editing"
-                        />
-                        <InputError
-                            :message="form.errors.password"
-                            class="mt-2"
-                        />
+                    <!-- Al crear: la contraseña la define el propio usuario vía el correo de invitación -->
+                    <div
+                        v-if="!editing"
+                        class="bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-800"
+                    >
+                        ✉️ Al guardar, se enviará un correo al usuario para que establezca su propia contraseña. No es necesario definirla aquí.
                     </div>
 
-                    <div>
-                        <InputLabel
-                            for="password_confirmation"
-                            value="Confirmar Contraseña"
-                        />
-                        <TextInput
-                            id="password_confirmation"
-                            v-model="form.password_confirmation"
-                            type="password"
-                            class="mt-1 block w-full"
-                            :required="!editing"
-                        />
-                        <InputError
-                            :message="form.errors.password_confirmation"
-                            class="mt-2"
-                        />
-                    </div>
+                    <!-- Al editar: contraseña manual opcional (uso excepcional, ej. el usuario no tiene acceso a su correo) -->
+                    <template v-if="editing">
+                        <div>
+                            <InputLabel
+                                for="password"
+                                value="Nueva Contraseña (Dejar en blanco para no cambiar)"
+                            />
+                            <TextInput
+                                id="password"
+                                v-model="form.password"
+                                type="password"
+                                class="mt-1 block w-full"
+                            />
+                            <InputError
+                                :message="form.errors.password"
+                                class="mt-2"
+                            />
+                        </div>
+
+                        <div>
+                            <InputLabel
+                                for="password_confirmation"
+                                value="Confirmar Contraseña"
+                            />
+                            <TextInput
+                                id="password_confirmation"
+                                v-model="form.password_confirmation"
+                                type="password"
+                                class="mt-1 block w-full"
+                            />
+                            <InputError
+                                :message="form.errors.password_confirmation"
+                                class="mt-2"
+                            />
+                        </div>
+                    </template>
 
                     <div class="mt-6 flex justify-end">
                         <button

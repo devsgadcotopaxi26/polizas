@@ -3,6 +3,7 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Notifications\EstablecerContrasenaNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -67,5 +68,14 @@ class User extends Authenticatable
     public function polizas()
     {
         return $this->hasMany(Poliza::class, 'created_by');
+    }
+
+    /**
+     * Envía el enlace para establecer/restablecer la contraseña por el
+     * mailer 'sistema', en vez del correo genérico de Laravel.
+     */
+    public function sendPasswordResetNotification($token): void
+    {
+        $this->notify(new EstablecerContrasenaNotification($token));
     }
 }
